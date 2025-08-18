@@ -1,29 +1,24 @@
-const display = document.querySelector('.display');
-const buttons = document.querySelectorAll('.buttons div');
+let display = document.getElementById('display');
+let current = "";
 
-display.textContent = "0";
-let current = ""; // одоогийн бичигдэж буй тоо/томъёо
+function append(val) {
+  current += val;
+  display.textContent = current;
+}
 
-buttons.forEach(btn => {
-  btn.addEventListener('click', () => {
-    const val = btn.textContent;
+function clearDisplay() {
+  current = "";
+  display.textContent = "0";
+}
 
-    if (val === "C") {
-      current = "";
-      display.textContent = "0";
-    } else if (val === "=") {
-      try {
-        // ×, ÷ тэмдгийг JS оператор болгон сольж байна
-        const expression = current.replace(/×/g, "*").replace(/÷/g, "/");
-        current = eval(expression).toString();
-        display.textContent = current;
-      } catch {
-        display.textContent = "Error";
-        current = "";
-      }
-    } else {
-      current += val;
-      display.textContent = current;
-    }
-  });
-});
+function calculate() {
+  try {
+    // ×÷ тэмдгийг JS оператор болгон сольж болно
+    const expr = current.replace(/×/g, "*").replace(/÷/g, "/");
+    current = eval(expr).toString();
+    display.textContent = current;
+  } catch {
+    display.textContent = "Error";
+    current = "";
+  }
+}
