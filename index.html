@@ -1,34 +1,221 @@
 <!DOCTYPE html>
+
 <html lang="mn">
 <head>
-  <meta charset="UTF-8">
-  <title>Тооны Машин (HTML + CSS)</title>
-  <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+    <link rel="javascript" href="index.js">
+    <title>Demo test</title>
 </head>
 <body>
-  <div class="calculator">
-    <div class="display">0</div>
-    <div class="buttons">
-      <div>7</div>
-      <div>8</div>
-      <div>9</div>
-      <div>+</div>
+    <div class="container">
+      
+        <header>
+            <div class="header-title">
+                <h1> Багш нарын ирц бүртгэл</h1>
+                <div class="current-date" id="currentDate"></div>
+            </div>
+            <button class="btn btn-secondary" onclick="exportData()">Excel татах</button>
+        </header>
 
-      <div>4</div>
-      <div>5</div>
-      <div>6</div>
-      <div>-</div>
 
-      <div>1</div>
-      <div>2</div>
-      <div>3</div>
-      <div>×</div>
-
-      <div>0</div>
-      <div>C</div>
-      <div>=</div>
-      <div>÷</div>
+    <div class="success-message" id="successMessage">
+        <span style="font-size: 1.5em;"></span>
+        <span id="successText"></span>
     </div>
-  </div>
+
+    <div class="stats-grid">
+        <div class="stat-card stat-present">
+            <div class="stat-icon"></div>
+            <div class="stat-number" id="presentCount">0</div>
+            <div class="stat-label">Ирсэн</div>
+        </div>
+        <div class="stat-card stat-absent">
+            <div class="stat-icon"></div>
+            <div class="stat-number" id="absentCount">0</div>
+            <div class="stat-label">Тасалсан</div>
+        </div>
+        <div class="stat-card stat-late">
+            <div class="stat-icon"></div>
+            <div class="stat-number" id="lateCount">0</div>
+            <div class="stat-label">Хоцорсон</div>
+        </div>
+        <div class="stat-card stat-total">
+            <div class="stat-icon"></div>
+            <div class="stat-number" id="totalCount">0</div>
+            <div class="stat-label">Нийт бүртгэл</div>
+        </div>
+    </div>
+
+   
+    <div class="main-grid">
+       
+        <div>
+          
+            <div class="card">
+                <h2>Багш нэмэх</h2>
+                <form id="teacherForm">
+                    <div class="form-group">
+                        <label>Багшийн нэр:</label>
+                        <input type="text" id="teacherName" required placeholder="Овог нэр">
+                    </div>
+                    <div class="form-group">
+                        <label>Хичээл:</label>
+                        <select id="teacherSubject" required>
+                            <option value="">Сонгоно уу</option>
+                            <option value="Математик">Математик</option>
+                            <option value="Монгол хэл">Монгол хэл</option>
+                            <option value="Англи хэл">Англи хэл</option>
+                            <option value="Физик">Физик</option>
+                            <option value="Хими">Хими</option>
+                            <option value="Биологи">Биологи</option>
+                            <option value="Түүх">Түүх</option>
+                            <option value="Географик">Географик</option>
+                            <option value="Спорт">Биеийн тамир</option>
+                            <option value="Урлаг">Урлаг</option>
+                            <option value="Бусад">Бусад</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Утас:</label>
+                        <input type="text" id="teacherPhone" placeholder="99001122">
+                    </div>
+                    <div class="form-group">
+                        <label>Email:</label>
+                        <input type="email" id="teacherEmail" placeholder="teacher@school.mn">
+                    </div>
+                    <button type="submit" class="btn"> Багш нэмэх</button>
+                </form>
+            </div>
+
+          
+            <div class="card" style="margin-top: 20px;">
+                <h2> Ирц бүртгэх</h2>
+                <form id="attendanceForm">
+                    <div class="form-group">
+                        <label>Багш сонгох:</label>
+                        <select id="selectTeacher" required>
+                            <option value="">Багш сонгоно уу</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Огноо:</label>
+                        <input type="date" id="attDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Төлөв:</label>
+                        <div class="radio-group">
+                            <div class="radio-option">
+                                <input type="radio" id="present" name="status" value="present" checked>
+                                <label for="present">Ирсэн</label>
+                            </div>
+                            <div class="radio-option">
+                                <input type="radio" id="absent" name="status" value="absent">
+                                <label for="absent">Тасалсан</label>
+                            </div>
+                            <div class="radio-option">
+                                <input type="radio" id="late" name="status" value="late">
+                                <label for="late">Хоцорсон</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Тэмдэглэл:</label>
+                        <textarea id="attNotes" placeholder="Нэмэлт тэмдэглэл..."></textarea>
+                    </div>
+                    <button type="submit" class="btn"> Ирц бүртгэх</button>
+                </form>
+            </div>
+        </div>
+
+      
+        <div class="card">
+            <h2> Ирцийн бүртгэл</h2>
+            
+          
+            <div class="filters">
+                <div class="search-box">
+                    <span class="search-icon">Search</span>
+                    <input type="text" id="searchInput" placeholder="Багш хайх...">
+                </div>
+                <div class="form-group" style="margin: 0;">
+                    <input type="date" id="filterDate" placeholder="Огноо">
+                </div>
+                <div class="form-group" style="margin: 0;">
+                    <select id="filterStatus">
+                        <option value="">Бүх төлөв</option>
+                        <option value="present">Ирсэн</option>
+                        <option value="absent">Тасалсан</option>
+                        <option value="late">Хоцорсон</option>
+                    </select>
+                </div>
+                <button class="btn" onclick="resetFilters()"> Цэвэрлэх</button>
+            </div>
+
+            <div class="table-container">
+                <table id="attendanceTable">
+                    <thead>
+                        <tr>
+                            <th>№</th>
+                            <th>Багш</th>
+                            <th>Хичээл</th>
+                            <th>Огноо</th>
+                            <th>Төлөв</th>
+                            <th>Тэмдэглэл</th>
+                            <th>Үйлдэл</th>
+                        </tr>
+                    </thead>
+                    <tbody id="attendanceBody">
+                    </tbody>
+                </table>
+                <div id="emptyState" class="empty-state" style="display: none;">
+                    <div class="empty-state-icon"></div>
+                    <h3>Одоогоор бүртгэл байхгүй</h3>
+                    <p>Багш нэмж, ирц бүртгэж эхэлнэ үү</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div class="modal" id="editModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2> Ирц засварлах</h2>
+            <span class="close-btn" onclick="closeEditModal()">&times;</span>
+        </div>
+        <form id="editForm">
+            <input type="hidden" id="editId">
+            <div class="form-group">
+                <label>Огноо:</label>
+                <input type="date" id="editDate" required>
+            </div>
+            <div class="form-group">
+                <label>Төлөв:</label>
+                <div class="radio-group">
+                    <div class="radio-option">
+                        <input type="radio" id="editPresent" name="editStatus" value="present">
+                        <label for="editPresent">Ирсэн</label>
+                    </div>
+                    <div class="radio-option">
+                        <input type="radio" id="editAbsent" name="editStatus" value="absent">
+                        <label for="editAbsent">Тасалсан</label>
+                    </div>
+                    <div class="radio-option">
+                        <input type="radio" id="editLate" name="editStatus" value="late">
+                        <label for="editLate">Хоцорсон</label>
+                    </div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Тэмдэглэл:</label>
+                <textarea id="editNotes"></textarea>
+            </div>
+            <button type="submit" class="btn"> Хадгалах</button>
+        </form>
+    </div>
+</div>
 </body>
 </html>
