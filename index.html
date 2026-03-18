@@ -65,7 +65,7 @@
     transition: background var(--transition), color var(--transition);
   }
 
-  /* ── SIDEBAR ── */
+  
   .sidebar {
     position: fixed; left:0; top:0; bottom:0;
     width: var(--sidebar-w);
@@ -83,11 +83,11 @@
     border-bottom: 1px solid var(--border);
     flex-shrink: 0;
   }
- .logo-img {
-  width: 40px;
-  height: 40px;
-  object-fit: contain;
-}
+  .logo-img {
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
+  }
   .logo-icon svg { width:18px; height:18px; fill:white; }
   .logo-text { font-size: 17px; font-weight: 800; letter-spacing: -0.5px; }
   .logo-text span { background: var(--gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
@@ -125,7 +125,7 @@
     font-size: 10px; font-weight: 700; padding: 2px 6px;
     border-radius: 20px; line-height:1.4;
   }
-  .sidebar-footer { padding: 12px; border-top: 1px solid var(--border); }
+  .sidebar-footer { padding: 12px; border-top: 1px solid var(--border); flex-shrink: 0; }
   .sidebar-user {
     display: flex; align-items: center; gap: 10px;
     padding: 10px; border-radius: var(--radius-sm);
@@ -255,7 +255,6 @@
   }
   .chip.active, .chip:hover { background:var(--primary); color:white; border-color:var(--primary); }
 
-  
   .bar-chart { height:180px; display:flex; align-items:flex-end; gap:8px; padding-top:10px; }
   .bar-group { flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; }
   .bar-wrap { width:100%; display:flex; gap:3px; align-items:flex-end; height:150px; }
@@ -291,7 +290,6 @@
   .donut-stat-val { font-size:16px; font-weight:700; }
   .donut-stat-lbl { font-size:11px; color:var(--text-3); }
 
-
   .bottom-row { display:grid; grid-template-columns:1.4fr 1fr; gap:16px; }
   .activity-card {
     background:var(--surface); border:1px solid var(--border);
@@ -309,7 +307,6 @@
   .act-desc { font-size:12px; color:var(--text-3); margin-top:1px; }
   .act-status { font-size:11.5px; font-weight:600; padding:3px 10px; border-radius:20px; }
   .act-time { font-size:11px; color:var(--text-3); white-space:nowrap; }
-
 
   .performer-list { display:flex; flex-direction:column; gap:10px; margin-top:4px; }
   .performer-item { display:flex; align-items:center; gap:10px; }
@@ -506,18 +503,7 @@
 
   .reports-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
 
-  
-  .sparkline { height:50px; display:flex; align-items:flex-end; gap:3px; }
-  .spark-bar { flex:1; border-radius:3px 3px 0 0; background:var(--gradient-soft); transition:height 1s ease; }
-  .spark-bar:hover { background:var(--primary); }
 
- 
-  .stat-ring-wrap { display:flex; flex-direction:column; align-items:center; gap:4px; }
-  .stat-ring svg { width:60px; height:60px; transform:rotate(-90deg); }
-  .stat-ring-val { font-size:14px; font-weight:800; }
-  .stat-ring-lbl { font-size:10px; color:var(--text-3); font-weight:600; text-align:center; }
-
- 
   .settings-grid { display:grid; grid-template-columns:240px 1fr; gap:20px; }
   .settings-menu {
     background:var(--surface); border:1px solid var(--border);
@@ -572,24 +558,17 @@
   .toast.error .toast-icon { background:var(--error-bg); }
   .toast.info .toast-icon { background:rgba(37,99,235,0.1); }
 
-  /* ── SKELETON ── */
-  .skeleton { background:linear-gradient(90deg, var(--surface2) 25%, var(--border) 50%, var(--surface2) 75%); background-size:200% 100%; animation:shimmer 1.5s infinite; border-radius:6px; }
-  @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
-
-  /* ── MOBILE MENU ── */
+  /* ── MOBILE ── */
   .mobile-menu-btn {
     display:none; width:38px; height:38px; border-radius:10px; border:1px solid var(--border);
     background:var(--surface); cursor:pointer; align-items:center; justify-content:center; color:var(--text-2);
   }
   .mobile-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:99; backdrop-filter:blur(4px); }
-
- 
   .count-badge {
     background:var(--gradient-soft); border:1px solid var(--border);
     color:var(--text-2); font-size:12px; font-weight:600; padding:3px 10px; border-radius:20px;
   }
 
- 
   ::-webkit-scrollbar { width:5px; height:5px; }
   ::-webkit-scrollbar-track { background:transparent; }
   ::-webkit-scrollbar-thumb { background:var(--border-strong); border-radius:10px; }
@@ -625,7 +604,6 @@
 </head>
 <body>
 
-
 <nav class="sidebar" id="sidebar">
   <div class="sidebar-logo">
     <div class="logo-icon">
@@ -633,7 +611,6 @@
     </div>
     <div class="logo-text"><span>Iet</span></div>
   </div>
-</nav>
 
   <div class="sidebar-nav">
     <div class="nav-section">
@@ -644,7 +621,7 @@
       </a>
       <a class="nav-item" data-page="teachers" onclick="navigate('teachers')">
         <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-        Багш нар 
+        Багш нар
       </a>
       <a class="nav-item" data-page="attendance" onclick="navigate('attendance')">
         <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
@@ -653,7 +630,7 @@
       </a>
       <a class="nav-item" data-page="reports" onclick="navigate('reports')">
         <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-       Тайлан
+        Тайлан
       </a>
     </div>
     <div class="nav-section">
@@ -662,7 +639,7 @@
         <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
         Тохиргоо
       </a>
-      <a class="nav-item" onclick="showToast('Logged out successfully','success')">
+      <a class="nav-item" onclick="showToast('Амжилттай гарлаа','success')">
         <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
         Гарах
       </a>
@@ -671,7 +648,7 @@
 
   <div class="sidebar-footer">
     <div class="sidebar-user">
-      <div class="user-avatar"></div>
+      <div class="user-avatar">SA</div>
       <div class="user-info">
         <div class="user-name">Admin</div>
         <div class="user-role">Administrator</div>
@@ -680,24 +657,23 @@
   </div>
 </nav>
 
-
 <div class="mobile-overlay" id="mobileOverlay" onclick="closeSidebar()"></div>
 
 <header class="topbar">
   <button class="mobile-menu-btn" onclick="toggleSidebar()">
     <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
   </button>
-  <div class="topbar-title" id="topbarTitle"> Хяналтын самбар</div>
+  <div class="topbar-title" id="topbarTitle">Хяналтын самбар</div>
   <div class="topbar-search">
     <svg class="search-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-    <input class="search-input" placeholder="Search teachers, records..." type="text">
+    <input class="search-input" placeholder="Багш, бичлэг хайх..." type="text">
   </div>
   <div class="topbar-actions">
-    <button class="icon-btn" onclick="showToast('No new notifications','info')">
+    <button class="icon-btn" onclick="showToast('Шинэ мэдэгдэл байхгүй','info')">
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
       <span class="notif-dot"></span>
     </button>
-    <button class="icon-btn" id="themeBtn" onclick="toggleTheme()" title="Toggle Dark Mode">
+    <button class="icon-btn" id="themeBtn" onclick="toggleTheme()" title="Харанхуй горим">
       <svg id="themeIcon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
     </button>
     <div class="topbar-profile">
@@ -708,12 +684,10 @@
   </div>
 </header>
 
-<!-- MAIN -->
+
 <main class="main">
 
-  <!-- ── DASHBOARD ── -->
   <div class="page active" id="page-dashboard">
-    <!-- KPI Cards -->
     <div class="kpi-grid">
       <div class="kpi-card blue">
         <div class="kpi-header">
@@ -721,8 +695,8 @@
           <span class="kpi-badge badge-up">↑ 3.2%</span>
         </div>
         <div class="kpi-value" data-target="142" data-count="0">0</div>
-        <div class="kpi-label">Total Teachers</div>
-        <div class="kpi-sub">12 departments · 6 grades</div>
+        <div class="kpi-label">Нийт багш нар</div>
+        <div class="kpi-sub">12 тэнхим · 6 анги</div>
       </div>
       <div class="kpi-card green">
         <div class="kpi-header">
@@ -730,8 +704,8 @@
           <span class="kpi-badge badge-up">↑ 1.8%</span>
         </div>
         <div class="kpi-value" data-target="118" data-count="0">0</div>
-        <div class="kpi-label">Present Today</div>
-        <div class="kpi-sub">83.1% attendance rate</div>
+        <div class="kpi-label">Өнөөдөр ирсэн</div>
+        <div class="kpi-sub">83.1% ирцийн хувь</div>
       </div>
       <div class="kpi-card red">
         <div class="kpi-header">
@@ -739,8 +713,8 @@
           <span class="kpi-badge badge-down">↑ 0.5%</span>
         </div>
         <div class="kpi-value" data-target="16" data-count="0">0</div>
-        <div class="kpi-label">Absent Today</div>
-        <div class="kpi-sub">11.3% of total staff</div>
+        <div class="kpi-label">Өнөөдөр ирээгүй</div>
+        <div class="kpi-sub">Нийт ажилтны 11.3%</div>
       </div>
       <div class="kpi-card yellow">
         <div class="kpi-header">
@@ -748,67 +722,61 @@
           <span class="kpi-badge badge-down">↓ 0.3%</span>
         </div>
         <div class="kpi-value" data-target="8" data-count="0">0</div>
-        <div class="kpi-label">Late Arrivals</div>
-        <div class="kpi-sub">5.6% ·  12 min өмнө </div>
+        <div class="kpi-label">Хоцорсон</div>
+        <div class="kpi-sub">5.6% · 12 мин өмнө</div>
       </div>
     </div>
 
-    <!-- Charts Row -->
     <div class="charts-row">
-      <!-- Bar Chart -->
       <div class="chart-card">
         <div class="card-header">
           <div>
             <div class="card-title">Долоо хоног тутмын ирц</div>
-            <div class="card-sub">Даваа  — Баасан  · Энэ долоо хоног vs Өмнө долоо хоног </div>
+            <div class="card-sub">Даваа — Баасан · Энэ долоо хоног vs Өнгөрсөн долоо хоног</div>
           </div>
           <div style="display:flex;gap:6px;">
-            <span class="chip active">Долоо хоног </span>
-            <span class="chip">Сар </span>
+            <span class="chip active">Долоо хоног</span>
+            <span class="chip">Сар</span>
           </div>
         </div>
         <div class="bar-chart" id="barChart"></div>
         <div class="legend">
-          <div class="legend-item"><div class="legend-dot" style="background:var(--primary)"></div>Одоо байгаа</div>
-          <div class="legend-item"><div class="legend-dot" style="background:var(--error)"></div>Байхгүй</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--primary)"></div>Ирсэн</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--error)"></div>Ирээгүй</div>
           <div class="legend-item"><div class="legend-dot" style="background:var(--warning)"></div>Хоцорсон</div>
         </div>
       </div>
 
-      <!-- Donut Chart -->
       <div class="chart-card">
         <div class="card-header">
           <div>
-            <div class="card-title">Одоо байгаа</div>
+            <div class="card-title">Ирцийн харьцаа</div>
             <div class="card-sub">Бодит цаг</div>
           </div>
         </div>
         <div class="donut-wrap">
           <svg class="donut-svg" viewBox="0 0 100 100">
             <circle cx="50" cy="50" r="38" fill="none" stroke="var(--surface2)" stroke-width="12"/>
-            <!-- Present: 83% -->
             <circle id="d1" cx="50" cy="50" r="38" fill="none" stroke="#2563EB" stroke-width="12"
               stroke-dasharray="0 239" stroke-dashoffset="0" stroke-linecap="round" style="transition:stroke-dasharray 1.5s ease"/>
-            <!-- Late: 5.6% -->
             <circle id="d2" cx="50" cy="50" r="38" fill="none" stroke="#F59E0B" stroke-width="12"
               stroke-dasharray="0 239" stroke-linecap="round" style="transition:stroke-dasharray 1.5s 0.3s ease"/>
-            <!-- Absent: 11.4% -->
             <circle id="d3" cx="50" cy="50" r="38" fill="none" stroke="#EF4444" stroke-width="12"
               stroke-dasharray="0 239" stroke-linecap="round" style="transition:stroke-dasharray 1.5s 0.6s ease"/>
           </svg>
           <div class="donut-center">
             <div class="donut-pct">83%</div>
-            <div class="donut-lbl">Одоо байгаа</div>
+            <div class="donut-lbl">Ирсэн</div>
           </div>
         </div>
         <div class="donut-stats">
           <div class="donut-stat">
             <div class="donut-stat-val" style="color:var(--primary)">118</div>
-            <div class="donut-stat-lbl">Одоо байгаа</div>
+            <div class="donut-stat-lbl">Ирсэн</div>
           </div>
           <div class="donut-stat">
             <div class="donut-stat-val" style="color:var(--error)">16</div>
-            <div class="donut-stat-lbl">Байхгүй</div>
+            <div class="donut-stat-lbl">Ирээгүй</div>
           </div>
           <div class="donut-stat">
             <div class="donut-stat-val" style="color:var(--warning)">8</div>
@@ -818,107 +786,104 @@
       </div>
     </div>
 
-    
     <div class="bottom-row">
-     
       <div class="activity-card">
         <div class="card-header">
           <div>
-            <div class="card-title">сүүлийн үе</div>
-            <div class="card-sub">Хамгийн сүүлийн үеийн ирц</div>
+            <div class="card-title">Сүүлийн үйл явдал</div>
+            <div class="card-sub">Хамгийн сүүлийн ирцийн бүртгэл</div>
           </div>
-          <span class="count-badge">12 Өдөр </span>
+          <span class="count-badge">12 өдөр</span>
         </div>
         <div class="activity-list">
           <div class="activity-item">
-            <div class="act-avatar" style="background:linear-gradient(135deg,#2563EB,#7C3AED)">M</div>
+            <div class="act-avatar" style="background:linear-gradient(135deg,#2563EB,#7C3AED)">М</div>
             <div class="act-info">
-              <div class="act-name">Мөнх </div>
-              <div class="act-desc">Математик </div>
+              <div class="act-name">Мөнх</div>
+              <div class="act-desc">Математик</div>
             </div>
-            <span class="act-status status-present">одоо байгаа</span>
-            <span class="act-time">8:02 AM</span>
+            <span class="act-status status-present">Ирсэн</span>
+            <span class="act-time">8:02</span>
           </div>
           <div class="activity-item">
-            <div class="act-avatar" style="background:linear-gradient(135deg,#F59E0B,#EF4444)">SL</div>
+            <div class="act-avatar" style="background:linear-gradient(135deg,#F59E0B,#EF4444)">С</div>
             <div class="act-info">
-              <div class="act-name">Сараа </div>
-              <div class="act-desc">Хими </div>
+              <div class="act-name">Сараа</div>
+              <div class="act-desc">Хими</div>
             </div>
             <span class="act-status status-late">Хоцорсон</span>
-            <span class="act-time">8:24 AM</span>
+            <span class="act-time">8:24</span>
           </div>
           <div class="activity-item">
-            <div class="act-avatar" style="background:linear-gradient(135deg,#10B981,#2563EB)">RK</div>
+            <div class="act-avatar" style="background:linear-gradient(135deg,#10B981,#2563EB)">Д</div>
             <div class="act-info">
-              <div class="act-name">Даваа </div>
-              <div class="act-desc">Түүх </div>
+              <div class="act-name">Даваа</div>
+              <div class="act-desc">Түүх</div>
             </div>
-            <span class="act-status status-absent">Байхгүй</span>
-            <span class="act-time">8:00 AM</span>
+            <span class="act-status status-absent">Ирээгүй</span>
+            <span class="act-time">8:00</span>
           </div>
           <div class="activity-item">
-            <div class="act-avatar" style="background:linear-gradient(135deg,#7C3AED,#EC4899)">AP</div>
+            <div class="act-avatar" style="background:linear-gradient(135deg,#7C3AED,#EC4899)">А</div>
             <div class="act-info">
-              <div class="act-name"l>Анна </div>
-              <div class="act-desc">English</div>
+              <div class="act-name">Анна</div>
+              <div class="act-desc">Англи хэл</div>
             </div>
-            <span class="act-status status-present">Одоо байгаа</span>
-            <span class="act-time">7:58 AM</span>
+            <span class="act-status status-present">Ирсэн</span>
+            <span class="act-time">7:58</span>
           </div>
           <div class="activity-item">
-            <div class="act-avatar" style="background:linear-gradient(135deg,#F59E0B,#10B981)">TN</div>
+            <div class="act-avatar" style="background:linear-gradient(135deg,#F59E0B,#10B981)">Б</div>
             <div class="act-info">
-              <div class="act-name">Баяр Эрдэнэ </div>
-              <div class="act-desc">Биеийн тамир </div>
+              <div class="act-name">Баяр Эрдэнэ</div>
+              <div class="act-desc">Биеийн тамир</div>
             </div>
-            <span class="act-status status-present">Одоо байгаа</span>
-            <span class="act-time">7:55 AM</span>
+            <span class="act-status status-present">Ирсэн</span>
+            <span class="act-time">7:55</span>
           </div>
         </div>
       </div>
 
-      <!-- Top Performers -->
       <div class="activity-card">
         <div class="card-header">
           <div>
             <div class="card-title">Хамгийн их ирц</div>
-            <div class="card-sub">Энэ сарын сайн бүртгэл</div>
+            <div class="card-sub">Энэ сарын шилдэг бүртгэл</div>
           </div>
         </div>
         <div class="performer-list">
           <div class="performer-item">
             <div class="perf-rank gold">🥇</div>
-            <div class="perf-avatar" style="background:linear-gradient(135deg,#2563EB,#7C3AED)">AP</div>
-            <div class="perf-info"><div class="perf-name">Анна</div><div class="perf-sub">English</div></div>
+            <div class="perf-avatar" style="background:linear-gradient(135deg,#2563EB,#7C3AED)">АП</div>
+            <div class="perf-info"><div class="perf-name">Анна</div><div class="perf-sub">Англи хэл</div></div>
             <div class="perf-bar-wrap"><div class="perf-bar-track"><div class="perf-bar-fill" style="width:100%"></div></div></div>
             <div class="perf-pct">100%</div>
           </div>
           <div class="performer-item">
             <div class="perf-rank silver">🥈</div>
-            <div class="perf-avatar" style="background:linear-gradient(135deg,#10B981,#2563EB)">TN</div>
-            <div class="perf-info"><div class="perf-name">Баяр Эрдэнэ</div><div class="perf-sub">биеийн тамир</div></div>
+            <div class="perf-avatar" style="background:linear-gradient(135deg,#10B981,#2563EB)">БЭ</div>
+            <div class="perf-info"><div class="perf-name">Баяр Эрдэнэ</div><div class="perf-sub">Биеийн тамир</div></div>
             <div class="perf-bar-wrap"><div class="perf-bar-track"><div class="perf-bar-fill" style="width:98%"></div></div></div>
             <div class="perf-pct">98%</div>
           </div>
           <div class="performer-item">
             <div class="perf-rank bronze">🥉</div>
-            <div class="perf-avatar" style="background:linear-gradient(135deg,#F59E0B,#EF4444)">JM</div>
+            <div class="perf-avatar" style="background:linear-gradient(135deg,#F59E0B,#EF4444)">М</div>
             <div class="perf-info"><div class="perf-name">Мөнх</div><div class="perf-sub">Математик</div></div>
             <div class="perf-bar-wrap"><div class="perf-bar-track"><div class="perf-bar-fill" style="width:96%"></div></div></div>
             <div class="perf-pct">96%</div>
           </div>
           <div class="performer-item">
             <div class="perf-rank">4</div>
-            <div class="perf-avatar" style="background:linear-gradient(135deg,#7C3AED,#EC4899)">LR</div>
-            <div class="perf-info"><div class="perf-name">Долгор </div><div class="perf-sub">Зураг</div></div>
+            <div class="perf-avatar" style="background:linear-gradient(135deg,#7C3AED,#EC4899)">Дл</div>
+            <div class="perf-info"><div class="perf-name">Долгор</div><div class="perf-sub">Зураг</div></div>
             <div class="perf-bar-wrap"><div class="perf-bar-track"><div class="perf-bar-fill" style="width:94%"></div></div></div>
             <div class="perf-pct">94%</div>
           </div>
           <div class="performer-item">
             <div class="perf-rank">5</div>
-            <div class="perf-avatar" style="background:linear-gradient(135deg,#06B6D4,#2563EB)">MC</div>
-            <div class="perf-info"><div class="perf-name">Манлай </div><div class="perf-sub">Chemistry</div></div>
+            <div class="perf-avatar" style="background:linear-gradient(135deg,#06B6D4,#2563EB)">Мн</div>
+            <div class="perf-info"><div class="perf-name">Манлай</div><div class="perf-sub">Хими</div></div>
             <div class="perf-bar-wrap"><div class="perf-bar-track"><div class="perf-bar-fill" style="width:92%"></div></div></div>
             <div class="perf-pct">92%</div>
           </div>
@@ -927,7 +892,7 @@
     </div>
   </div>
 
-  <!-- ── ATTENDANCE ── -->
+  
   <div class="page" id="page-attendance">
     <div class="page-header">
       <div>
@@ -935,35 +900,35 @@
         <div class="page-desc">Багш нарын өдөр тутмын ирцийг тэмдэглэж, удирдана</div>
       </div>
       <div style="display:flex;gap:8px;">
-        <button class="btn btn-outline" onclick="showToast('Attendance exported','success')">
+        <button class="btn btn-outline" onclick="showToast('Ирц экспортлогдлоо','success')">
           <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          Export
+          Экспорт
         </button>
-        <button class="btn btn-primary" onclick="showToast('All marked present','success')">
+        <button class="btn btn-primary" onclick="showToast('Бүгдийг ирсэн гэж тэмдэглэлээ','success')">
           <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
-          mark all
+          Бүгдийг тэмдэглэх
         </button>
       </div>
     </div>
 
     <div class="filters-bar">
       <svg style="width:16px;height:16px;color:var(--text-3);flex-shrink:0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
-      <input class="filter-input" placeholder="Search by name or department..." type="text" oninput="filterTable(this.value)">
+      <input class="filter-input" placeholder="Нэр эсвэл тэнхимээр хайх..." type="text" oninput="filterTable(this.value)">
       <div class="filter-sep"></div>
-      <select class="filter-select" onchange="showToast('Filter applied','info')">
-        <option>All Status</option>
-        <option>Одоо байгаа</option>
-        <option>Байхгүй</option>
-        <option>Хоцорсон </option>
+      <select class="filter-select" onchange="showToast('Шүүлтүүр хэрэглэгдлээ','info')">
+        <option>Бүх статус</option>
+        <option>Ирсэн</option>
+        <option>Ирээгүй</option>
+        <option>Хоцорсон</option>
       </select>
-      <select class="filter-select" onchange="showToast('Department filtered','info')">
-        <option>All Depts</option>
-        <option>математик </option>
+      <select class="filter-select" onchange="showToast('Тэнхимээр шүүлээ','info')">
+        <option>Бүх тэнхим</option>
+        <option>Математик</option>
         <option>Хими</option>
-        <option>English</option>
-        <option>түүх </option>
+        <option>Англи хэл</option>
+        <option>Түүх</option>
       </select>
-      <input type="date" class="filter-select" value="2025-03-17">
+      <input type="date" class="filter-select" value="2026-03-18">
     </div>
 
     <div class="table-card">
@@ -972,19 +937,19 @@
           <thead>
             <tr>
               <th>#</th>
-              <th>Teacher</th>
-              <th>Department</th>
-              <th>Date</th>
-              <th>Check-In</th>
-              <th>Status</th>
-              <th>Action</th>
+              <th>Багш</th>
+              <th>Тэнхим</th>
+              <th>Огноо</th>
+              <th>Ирсэн цаг</th>
+              <th>Статус</th>
+              <th>Үйлдэл</th>
             </tr>
           </thead>
           <tbody id="tableBody"></tbody>
         </table>
       </div>
       <div class="table-footer">
-        <span id="tableCount">32 багшийн 1-10-ыг харуулж байна</span>
+        <span id="tableCount">32 багшийн 1–10-ыг харуулж байна</span>
         <div class="pagination">
           <button class="pg-btn">‹</button>
           <button class="pg-btn active">1</button>
@@ -997,30 +962,28 @@
     </div>
   </div>
 
-  <!-- ── TEACHERS ── -->
   <div class="page" id="page-teachers">
     <div class="page-header">
       <div>
         <div class="page-title">Багш нар</div>
         <div class="page-desc">Профайл болон ирцийн түүхийг харах</div>
       </div>
-      <button class="btn btn-primary" onclick="showToast('Teacher added','success')">
+      <button class="btn btn-primary" onclick="showToast('Багш нэмэгдлээ','success')">
         <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-        Багш нэмэх 
+        Багш нэмэх
       </button>
     </div>
     <div class="profile-grid">
-      <!-- Profile Card -->
       <div>
         <div class="profile-card">
           <div class="profile-banner"><div class="profile-banner-pattern"></div></div>
           <div class="profile-avatar-wrap">
-            <div class="profile-avatar">JM</div>
+            <div class="profile-avatar">МБ</div>
             <div class="profile-online"></div>
           </div>
           <div class="profile-name">Мөнх</div>
-          <div class="profile-role">Математик багш </div>
-          <div class="profile-dept">Шинжлэх ухаан, технологийн хэлтэс</div>
+          <div class="profile-role">Математикийн багш</div>
+          <div class="profile-dept">Шинжлэх ухаан, технологийн тэнхим</div>
           <div class="profile-stats-row">
             <div class="profile-stat">
               <div class="profile-stat-val" style="color:var(--primary)">96%</div>
@@ -1028,54 +991,52 @@
             </div>
             <div class="profile-stat">
               <div class="profile-stat-val">8</div>
-              <div class="profile-stat-lbl">Жил мэдэгдэхүй</div>
+              <div class="profile-stat-lbl">Жил</div>
             </div>
             <div class="profile-stat">
               <div class="profile-stat-val" style="color:var(--success)">4.9</div>
-              <div class="profile-stat-lbl">Үнэлгээ </div>
+              <div class="profile-stat-lbl">Үнэлгээ</div>
             </div>
           </div>
           <div class="profile-info-list">
             <div class="profile-info-item">
               <div class="pii-icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></div>
-              <div><div class="pii-label">И-Мэйл </div><div class="pii-val">iet@school.edu</div></div>
+              <div><div class="pii-label">И-мэйл</div><div class="pii-val">munkh@school.mn</div></div>
             </div>
             <div class="profile-info-item">
               <div class="pii-icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.99 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.92 1h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 8.91a16 16 0 0 0 5.99 5.99l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg></div>
-              <div><div class="pii-label">Утас</div><div class="pii-val">+976011010</div></div>
+              <div><div class="pii-label">Утас</div><div class="pii-val">+976 9911 0101</div></div>
             </div>
             <div class="profile-info-item">
               <div class="pii-icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
-              <div><div class="pii-label">Нэгдсэн</div><div class="pii-val">2017-оны 9-р сар</div></div>
+              <div><div class="pii-label">Элссэн</div><div class="pii-val">2017 оны 9-р сар</div></div>
             </div>
             <div class="profile-info-item">
               <div class="pii-icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></div>
-              <div><div class="pii-label">Өрөө</div><div class="pii-val"> B 204</div></div>
+              <div><div class="pii-label">Өрөө</div><div class="pii-val">Б-204</div></div>
             </div>
           </div>
         </div>
       </div>
 
       <div>
-        <!-- Calendar -->
         <div class="calendar-card">
           <div class="cal-header">
-            <div class="cal-month">March 2026</div>
+            <div class="cal-month">2026 оны 3-р сар</div>
             <div class="cal-nav">
-              <button class="cal-btn" onclick="showToast('Previous month','info')"><svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
-              <button class="cal-btn" onclick="showToast('Next month','info')"><svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></button>
+              <button class="cal-btn" onclick="showToast('Өмнөх сар','info')"><svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
+              <button class="cal-btn" onclick="showToast('Дараагийн сар','info')"><svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></button>
             </div>
           </div>
           <div class="calendar-grid" id="calendarGrid"></div>
           <div class="cal-legend">
-            <div class="cal-legend-item"><div class="cal-legend-dot" style="background:var(--primary)"></div>Өнөөөдөр </div>
+            <div class="cal-legend-item"><div class="cal-legend-dot" style="background:var(--primary)"></div>Өнөөдөр</div>
             <div class="cal-legend-item"><div class="cal-legend-dot" style="background:var(--success)"></div>Ирсэн</div>
             <div class="cal-legend-item"><div class="cal-legend-dot" style="background:var(--error)"></div>Ирээгүй</div>
             <div class="cal-legend-item"><div class="cal-legend-dot" style="background:var(--warning)"></div>Хоцорсон</div>
           </div>
         </div>
 
-        <!-- Stats Cards -->
         <div class="kpi-grid" style="grid-template-columns:repeat(3,1fr)">
           <div class="kpi-card green" style="padding:16px">
             <div class="kpi-icon" style="width:36px;height:36px;border-radius:10px;margin-bottom:10px"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
@@ -1097,112 +1058,109 @@
     </div>
   </div>
 
-  <!-- ── REPORTS ── -->
   <div class="page" id="page-reports">
     <div class="page-header">
       <div>
-        <div class="page-title">тайлан </div>
+        <div class="page-title">Тайлан</div>
         <div class="page-desc">Ирцийн тайлан гаргах, экспортлох</div>
       </div>
       <div class="export-btns">
-        <button class="btn btn-pdf" onclick="showToast('PDF exported successfully','success')">
+        <button class="btn btn-pdf" onclick="showToast('PDF амжилттай экспортлогдлоо','success')">
           <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-          Export PDF
+          PDF экспорт
         </button>
-        <button class="btn btn-excel" onclick="showToast('Excel file exported','success')">
+        <button class="btn btn-excel" onclick="showToast('Excel файл экспортлогдлоо','success')">
           <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-          Export Excel
+          Excel экспорт
         </button>
       </div>
     </div>
 
     <div class="reports-filters">
-      <div style="font-size:14px;font-weight:700;margin-bottom:14px;">Filter Reports</div>
+      <div style="font-size:14px;font-weight:700;margin-bottom:14px;">Тайлан шүүх</div>
       <div class="reports-filters-grid">
         <div class="form-group">
-          <label>Огнооны диапазон</label>
-          <select class="form-input"><option>Энэ сар</option><option>Сүүлийн сар</option><option>Энэ улирал</option><option>Энэ жил</option></select>
+          <label>Огнооны хүрээ</label>
+          <select class="form-input"><option>Энэ сар</option><option>Өнгөрсөн сар</option><option>Энэ улирал</option><option>Энэ жил</option></select>
         </div>
         <div class="form-group">
-          <label>Ажлын бүс</label>
-          <select class="form-input"><option>Бүх бүс</option><option>Математик</option><option>Шинжлэх ухаан</option><option>Англи хэл</option></select>
+          <label>Тэнхим</label>
+          <select class="form-input"><option>Бүх тэнхим</option><option>Математик</option><option>Шинжлэх ухаан</option><option>Англи хэл</option></select>
         </div>
         <div class="form-group">
-          <label>Status</label>
+          <label>Статус</label>
           <select class="form-input"><option>Бүх статус</option><option>Ирсэн</option><option>Ирээгүй</option><option>Хоцорсон</option></select>
         </div>
         <div class="form-group">
           <label>&nbsp;</label>
-          <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="showToast('Report generated','success')">Generate</button>
+          <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="showToast('Тайлан гарлаа','success')">Үүсгэх</button>
         </div>
       </div>
     </div>
 
     <div class="reports-grid">
-      <!-- Monthly Trend -->
       <div class="chart-card">
         <div class="card-header">
-          <div><div class="card-title">Сарын ирц</div><div class="card-sub">Jan – Mar 2026</div></div>
+          <div><div class="card-title">Сарын ирц</div><div class="card-sub">2026 оны 1–3-р сар</div></div>
         </div>
         <div style="height:200px;display:flex;flex-direction:column;justify-content:flex-end">
           <div style="display:flex;align-items:flex-end;gap:6px;height:160px;padding:0 4px">
             <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">
               <div style="font-size:10px;color:var(--text-3);font-weight:600">88%</div>
               <div style="flex:1;width:100%;background:var(--gradient);border-radius:5px 5px 0 0;height:88%;transition:height 1.2s ease"></div>
-              <div style="font-size:10px;color:var(--text-3)">Jan</div>
+              <div style="font-size:10px;color:var(--text-3)">1-р сар</div>
             </div>
             <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">
               <div style="font-size:10px;color:var(--text-3);font-weight:600">84%</div>
               <div style="flex:1;width:100%;background:var(--gradient);border-radius:5px 5px 0 0;height:84%;opacity:0.85;transition:height 1.2s 0.1s ease"></div>
-              <div style="font-size:10px;color:var(--text-3)">Feb</div>
+              <div style="font-size:10px;color:var(--text-3)">2-р сар</div>
             </div>
             <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">
               <div style="font-size:10px;color:var(--text-3);font-weight:600">83%</div>
               <div style="flex:1;width:100%;background:var(--gradient);border-radius:5px 5px 0 0;height:83%;opacity:0.7;transition:height 1.2s 0.2s ease"></div>
-              <div style="font-size:10px;color:var(--text-3)">Mar</div>
+              <div style="font-size:10px;color:var(--text-3)">3-р сар</div>
             </div>
           </div>
         </div>
         <div style="margin-top:16px;display:grid;grid-template-columns:repeat(3,1fr);gap:10px;border-top:1px solid var(--border);padding-top:14px">
-          <div style="text-align:center"><div style="font-size:16px;font-weight:800">85%</div><div style="font-size:11px;color:var(--text-3)">Avg Rate</div></div>
-          <div style="text-align:center"><div style="font-size:16px;font-weight:800;color:var(--success)">1,243</div><div style="font-size:11px;color:var(--text-3)">Total Present</div></div>
-          <div style="text-align:center"><div style="font-size:16px;font-weight:800;color:var(--error)">187</div><div style="font-size:11px;color:var(--text-3)">Total Absent</div></div>
+          <div style="text-align:center"><div style="font-size:16px;font-weight:800">85%</div><div style="font-size:11px;color:var(--text-3)">Дундаж хувь</div></div>
+          <div style="text-align:center"><div style="font-size:16px;font-weight:800;color:var(--success)">1,243</div><div style="font-size:11px;color:var(--text-3)">Нийт ирсэн</div></div>
+          <div style="text-align:center"><div style="font-size:16px;font-weight:800;color:var(--error)">187</div><div style="font-size:11px;color:var(--text-3)">Нийт ирээгүй</div></div>
         </div>
       </div>
 
-      <!-- Dept Breakdown -->
       <div class="chart-card">
         <div class="card-header">
-          <div><div class="card-title">Хэлтсийн задаргаа</div><div class="card-sub">Хэлтсийн ирц</div></div>
+          <div><div class="card-title">Тэнхимийн задаргаа</div><div class="card-sub">Тэнхим тус бүрийн ирц</div></div>
         </div>
         <div style="display:flex;flex-direction:column;gap:12px">
           <div style="display:flex;align-items:center;gap:12px">
-            <div style="font-size:12px;font-weight:600;width:90px;color:var(--text-2)">Математик </div>
+            <div style="font-size:12px;font-weight:600;width:100px;color:var(--text-2)">Математик</div>
             <div style="flex:1;height:8px;background:var(--surface2);border-radius:10px;overflow:hidden"><div style="height:100%;width:94%;background:var(--gradient);border-radius:10px"></div></div>
             <div style="font-size:12px;font-weight:700;color:var(--primary);width:34px;text-align:right">94%</div>
           </div>
           <div style="display:flex;align-items:center;gap:12px">
-            <div style="font-size:12px;font-weight:600;width:90px;color:var(--text-2)">Шинжлэх ухаан</div>
+            <div style="font-size:12px;font-weight:600;width:100px;color:var(--text-2)">Шинж. ухаан</div>
             <div style="flex:1;height:8px;background:var(--surface2);border-radius:10px;overflow:hidden"><div style="height:100%;width:88%;background:var(--gradient);border-radius:10px;opacity:0.85"></div></div>
             <div style="font-size:12px;font-weight:700;color:var(--primary);width:34px;text-align:right">88%</div>
           </div>
           <div style="display:flex;align-items:center;gap:12px">
-            <div style="font-size:12px;font-weight:600;width:90px;color:var(--text-2)">Англи хэл</div>
+            <div style="font-size:12px;font-weight:600;width:100px;color:var(--text-2)">Англи хэл</div>
             <div style="flex:1;height:8px;background:var(--surface2);border-radius:10px;overflow:hidden"><div style="height:100%;width:91%;background:var(--gradient);border-radius:10px;opacity:0.8"></div></div>
             <div style="font-size:12px;font-weight:700;color:var(--primary);width:34px;text-align:right">91%</div>
           </div>
           <div style="display:flex;align-items:center;gap:12px">
-            <div style="font-size:12px;font-weight:600;width:90px;color:var(--text-2)">Түүх</div>
+            <div style="font-size:12px;font-weight:600;width:100px;color:var(--text-2)">Түүх</div>
             <div style="flex:1;height:8px;background:var(--surface2);border-radius:10px;overflow:hidden"><div style="height:100%;width:79%;background:var(--gradient);border-radius:10px;opacity:0.65"></div></div>
             <div style="font-size:12px;font-weight:700;color:var(--primary);width:34px;text-align:right">79%</div>
           </div>
           <div style="display:flex;align-items:center;gap:12px">
-            <div style="font-size:12px;font-weight:600;width:90px;color:var(--text-2)">Биеийн тамир </div>
+            <div style="font-size:12px;font-weight:600;width:100px;color:var(--text-2)">Биеийн тамир</div>
             <div style="flex:1;height:8px;background:var(--surface2);border-radius:10px;overflow:hidden"><div style="height:100%;width:86%;background:var(--gradient);border-radius:10px;opacity:0.7"></div></div>
             <div style="font-size:12px;font-weight:700;color:var(--primary);width:34px;text-align:right">86%</div>
           </div>
           <div style="display:flex;align-items:center;gap:12px">
-            <div style="font-size:12px;font-weight:600;width:90px;color:var(--text-2)">Arts</div>
+            <div style="font-size:12px;font-weight:600;width:100px;color:var(--text-2)">Зураг</div>
             <div style="flex:1;height:8px;background:var(--surface2);border-radius:10px;overflow:hidden"><div style="height:100%;width:96%;background:var(--gradient);border-radius:10px"></div></div>
             <div style="font-size:12px;font-weight:700;color:var(--primary);width:34px;text-align:right">96%</div>
           </div>
@@ -1215,67 +1173,67 @@
   <div class="page" id="page-settings">
     <div class="page-header">
       <div>
-        <div class="page-title">Тохиргоо </div>
-        <div class="page-desc">Таны системийн тохиргоог тохируулна</div>
+        <div class="page-title">Тохиргоо</div>
+        <div class="page-desc">Системийн тохиргоог өөрчлөх</div>
       </div>
     </div>
     <div class="settings-grid">
       <div class="settings-menu">
         <div class="settings-menu-item active">
           <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-          General
+          Ерөнхий
         </div>
         <div class="settings-menu-item">
           <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-          Notifications
+          Мэдэгдэл
         </div>
         <div class="settings-menu-item">
           <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-          Security
+          Аюулгүй байдал
         </div>
         <div class="settings-menu-item">
           <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
-          Profile
+          Профайл
         </div>
       </div>
       <div class="settings-panel">
-        <div class="settings-section-title">General Settings</div>
-        <div class="settings-section-desc">Customize your application preferences and appearance.</div>
+        <div class="settings-section-title">Ерөнхий тохиргоо</div>
+        <div class="settings-section-desc">Програмын тохиргоо болон харагдах байдлыг өөрчилнө.</div>
 
         <div class="settings-row">
           <div class="settings-row-info">
-            <div class="settings-row-label">Dark Mode</div>
-            <div class="settings-row-desc">Switch between light and dark interface themes</div>
+            <div class="settings-row-label">Харанхуй горим</div>
+            <div class="settings-row-desc">Гэрэл ба харанхуй интерфэйс хооронд солих</div>
           </div>
           <div class="toggle" id="darkToggle" onclick="toggleThemeFromSettings()"></div>
         </div>
         <div class="settings-row">
           <div class="settings-row-info">
-            <div class="settings-row-label">Email Notifications</div>
-            <div class="settings-row-desc">Receive daily attendance summary via email</div>
+            <div class="settings-row-label">И-мэйл мэдэгдэл</div>
+            <div class="settings-row-desc">Өдөр тутмын ирцийн хураангуйг и-мэйлээр авах</div>
           </div>
-          <div class="toggle on" onclick="this.classList.toggle('on');showToast('Notification setting updated','success')"></div>
+          <div class="toggle on" onclick="this.classList.toggle('on');showToast('Мэдэгдлийн тохиргоо шинэчлэгдлээ','success')"></div>
         </div>
         <div class="settings-row">
           <div class="settings-row-info">
-            <div class="settings-row-label">Auto-mark Absent</div>
-            <div class="settings-row-desc">Automatically mark teachers absent after 9:00 AM</div>
+            <div class="settings-row-label">Автоматаар ирээгүй тэмдэглэх</div>
+            <div class="settings-row-desc">9:00 цагийн дараа ирээгүй гэж автоматаар тэмдэглэх</div>
           </div>
-          <div class="toggle" onclick="this.classList.toggle('on');showToast('Auto-mark setting saved','success')"></div>
+          <div class="toggle" onclick="this.classList.toggle('on');showToast('Автомат тохиргоо хадгалагдлаа','success')"></div>
         </div>
         <div class="settings-row">
           <div class="settings-row-info">
-            <div class="settings-row-label">Weekend Tracking</div>
-            <div class="settings-row-desc">Enable attendance tracking on weekends</div>
+            <div class="settings-row-label">Амралтын өдрийн бүртгэл</div>
+            <div class="settings-row-desc">Амралтын өдрүүдэд ирцийн бүртгэл хийх</div>
           </div>
-          <div class="toggle" onclick="this.classList.toggle('on');showToast('Weekend tracking updated','success')"></div>
+          <div class="toggle" onclick="this.classList.toggle('on');showToast('Амралтын өдрийн тохиргоо шинэчлэгдлээ','success')"></div>
         </div>
         <div class="settings-row">
           <div class="settings-row-info">
-            <div class="settings-row-label">Analytics Reports</div>
-            <div class="settings-row-desc">Send weekly analytics report to admin email</div>
+            <div class="settings-row-label">Аналитик тайлан</div>
+            <div class="settings-row-desc">Долоо хоног тутмын аналитик тайланг и-мэйлээр илгээх</div>
           </div>
-          <div class="toggle on" onclick="this.classList.toggle('on');showToast('Reports setting updated','success')"></div>
+          <div class="toggle on" onclick="this.classList.toggle('on');showToast('Тайлангийн тохиргоо шинэчлэгдлээ','success')"></div>
         </div>
       </div>
     </div>
@@ -1286,26 +1244,26 @@
 <div class="toast-container" id="toastContainer"></div>
 
 <script>
-
 const teachers = [
-  {id:1, name:'Анна ', dept:'English', date:'Mar 17', checkin:'7:58 AM', status:'Ирсэн ', color:'linear-gradient(135deg,#7C3AED,#EC4899)', initials:'AP'},
-  {id:2, name:'Мөнх', dept:'Mathematics', date:'Mar 17', checkin:'8:02 AM', status:'Ирсэн ', color:'linear-gradient(135deg,#2563EB,#7C3AED)', initials:'JM'},
-  {id:3, name:'Сараа ', dept:'Science', date:'Mar 17', checkin:'8:24 AM', status:'Хоцорсон ', color:'linear-gradient(135deg,#F59E0B,#EF4444)', initials:'SL'},
-  {id:4, name:'Баяр эрдэнэ ', dept:'History', date:'Mar 17', checkin:'—', status:'Ирээгүй ', color:'linear-gradient(135deg,#10B981,#2563EB)', initials:'RK'},
-  {id:5, name:'Даваа ', dept:'Physics', date:'Mar 17', checkin:'7:55 AM', status:'Ирсэн ', color:'linear-gradient(135deg,#F59E0B,#10B981)', initials:'TN'},
-  {id:6, name:'Бат Эрдэнэ ', dept:'Arts', date:'Mar 17', checkin:'7:51 AM', status:'Ирсэн ', color:'linear-gradient(135deg,#7C3AED,#EC4899)', initials:'LR'},
-  {id:7, name:'Мөнх эрдэнэ ', dept:'Chemistry', date:'Mar 17', checkin:'8:00 AM', status:'Ирсэн ', color:'linear-gradient(135deg,#06B6D4,#2563EB)', initials:'MC'},
-  {id:8, name:'Баяр ', dept:'English', date:'Mar 17', checkin:'—', status:'Ирээгүй ', color:'linear-gradient(135deg,#EC4899,#F59E0B)', initials:'DP'},
-  {id:9, name:'Нарансолонго ', dept:'PE', date:'Mar 17', checkin:'8:33 AM', status:'Хоцорсон ', color:'linear-gradient(135deg,#10B981,#06B6D4)', initials:'CV'},
-  {id:10, name:'Галаа', dept:'Biology', date:'Mar 17', checkin:'7:59 AM', status:'Ирсэн ', color:'linear-gradient(135deg,#2563EB,#10B981)', initials:'ES'},
+  {id:1, name:'Анна', dept:'Англи хэл', date:'03/18', checkin:'7:58', status:'present', color:'linear-gradient(135deg,#7C3AED,#EC4899)', initials:'А'},
+  {id:2, name:'Мөнх', dept:'Математик', date:'03/18', checkin:'8:02', status:'present', color:'linear-gradient(135deg,#2563EB,#7C3AED)', initials:'М'},
+  {id:3, name:'Сараа', dept:'Хими', date:'03/18', checkin:'8:24', status:'late', color:'linear-gradient(135deg,#F59E0B,#EF4444)', initials:'С'},
+  {id:4, name:'Баяр Эрдэнэ', dept:'Түүх', date:'03/18', checkin:'—', status:'absent', color:'linear-gradient(135deg,#10B981,#2563EB)', initials:'БЭ'},
+  {id:5, name:'Даваа', dept:'Физик', date:'03/18', checkin:'7:55', status:'present', color:'linear-gradient(135deg,#F59E0B,#10B981)', initials:'Д'},
+  {id:6, name:'Бат Эрдэнэ', dept:'Зураг', date:'03/18', checkin:'7:51', status:'present', color:'linear-gradient(135deg,#7C3AED,#EC4899)', initials:'БТ'},
+  {id:7, name:'Мөнх Эрдэнэ', dept:'Хими', date:'03/18', checkin:'8:00', status:'present', color:'linear-gradient(135deg,#06B6D4,#2563EB)', initials:'МЭ'},
+  {id:8, name:'Баяр', dept:'Англи хэл', date:'03/18', checkin:'—', status:'absent', color:'linear-gradient(135deg,#EC4899,#F59E0B)', initials:'Б'},
+  {id:9, name:'Нарансолонго', dept:'Биеийн тамир', date:'03/18', checkin:'8:33', status:'late', color:'linear-gradient(135deg,#10B981,#06B6D4)', initials:'Н'},
+  {id:10, name:'Галаа', dept:'Биологи', date:'03/18', checkin:'7:59', status:'present', color:'linear-gradient(135deg,#2563EB,#10B981)', initials:'Г'},
 ];
 
-
-const pageNames = {dashboard:'Dashboard', attendance:'Attendance', teachers:'Teachers', reports:'Reports', settings:'Settings'};
+const statusLabels = {present:'Ирсэн', absent:'Ирээгүй', late:'Хоцорсон'};
+const statusIcons  = {present:'✔', absent:'❌', late:'⏰'};
+const pageNames = {dashboard:'Хяналтын самбар', attendance:'Ирц', teachers:'Багш нар', reports:'Тайлан', settings:'Тохиргоо'};
 
 function navigate(page) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.querySelectorAll('.nav-item[data-page]').forEach(n => n.classList.remove('active'));
   const el = document.getElementById('page-' + page);
   if (el) el.classList.add('active');
   document.querySelectorAll('.nav-item[data-page="' + page + '"]').forEach(n => n.classList.add('active'));
@@ -1323,30 +1281,25 @@ function closeSidebar() {
   document.getElementById('mobileOverlay').classList.remove('show');
 }
 
-
 function toggleTheme() {
   const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
   document.documentElement.setAttribute('data-theme', isDark ? 'light' : 'dark');
   const dt = document.getElementById('darkToggle');
-  if (dt) { if (!isDark) dt.classList.add('on'); else dt.classList.remove('on'); }
-  showToast(isDark ? 'Light mode enabled' : 'Dark mode enabled', 'info');
+  if (dt) { isDark ? dt.classList.remove('on') : dt.classList.add('on'); }
+  showToast(isDark ? 'Гэрэл горим идэвхжлээ' : 'Харанхуй горим идэвхжлээ', 'info');
 }
-function toggleThemeFromSettings() {
-  toggleTheme();
-}
-
+function toggleThemeFromSettings() { toggleTheme(); }
 
 function showToast(msg, type = 'info') {
   const icons = {success:'✓', error:'✕', info:'ℹ'};
   const colors = {success:'var(--success)', error:'var(--error)', info:'var(--primary)'};
   const container = document.getElementById('toastContainer');
   const toast = document.createElement('div');
-  toast.className = `toast ${type}`;
-  toast.innerHTML = `<div class="toast-icon" style="color:${colors[type]}">${icons[type]}</div><span>${msg}</span>`;
+  toast.className = 'toast ' + type;
+  toast.innerHTML = '<div class="toast-icon" style="color:' + colors[type] + '">' + icons[type] + '</div><span>' + msg + '</span>';
   container.appendChild(toast);
   setTimeout(() => { toast.classList.add('removing'); setTimeout(() => toast.remove(), 300); }, 3000);
 }
-
 
 function animateCounters() {
   document.querySelectorAll('[data-target]').forEach(el => {
@@ -1362,16 +1315,15 @@ function animateCounters() {
   });
 }
 
-
 function buildBarChart() {
   const data = [
-    {day:'Mon', p:92, a:8, l:4},
-    {day:'Tue', p:88, a:12, l:6},
-    {day:'Wed', p:95, a:6, l:3},
-    {day:'Thu', p:90, a:10, l:5},
-    {day:'Fri', p:85, a:15, l:7},
-    {day:'Sat', p:40, a:5, l:2},
-    {day:'Sun', p:0, a:0, l:0},
+    {day:'Да', p:92, a:8, l:4},
+    {day:'Мя', p:88, a:12, l:6},
+    {day:'Лх', p:95, a:6, l:3},
+    {day:'Пү', p:90, a:10, l:5},
+    {day:'Ба', p:85, a:15, l:7},
+    {day:'Бя', p:40, a:5, l:2},
+    {day:'Ня', p:0, a:0, l:0},
   ];
   const max = 110;
   const container = document.getElementById('barChart');
@@ -1379,36 +1331,33 @@ function buildBarChart() {
   data.forEach(d => {
     const g = document.createElement('div');
     g.className = 'bar-group';
-    g.innerHTML = `
-      <div class="bar-wrap">
-        <div class="bar present" data-val="${d.p}" style="height:${(d.p/max*140)}px"></div>
-        <div class="bar absent" data-val="${d.a}" style="height:${(d.a/max*140)}px"></div>
-        <div class="bar late" data-val="${d.l}" style="height:${(d.l/max*140)}px"></div>
-      </div>
-      <div class="bar-label">${d.day}</div>
-    `;
+    g.innerHTML =
+      '<div class="bar-wrap">' +
+        '<div class="bar present" data-val="' + d.p + '" style="height:' + (d.p/max*140) + 'px"></div>' +
+        '<div class="bar absent" data-val="' + d.a + '" style="height:' + (d.a/max*140) + 'px"></div>' +
+        '<div class="bar late" data-val="' + d.l + '" style="height:' + (d.l/max*140) + 'px"></div>' +
+      '</div>' +
+      '<div class="bar-label">' + d.day + '</div>';
     container.appendChild(g);
   });
 }
 
-
 function buildDonut() {
   const circ = 2 * Math.PI * 38;
- 
   const pPresent = 0.831, pLate = 0.056, pAbsent = 0.113;
   const d1 = document.getElementById('d1');
   const d2 = document.getElementById('d2');
   const d3 = document.getElementById('d3');
   if (!d1) return;
   const presentLen = circ * pPresent;
-  const lateLen = circ * pLate;
-  const absentLen = circ * pAbsent;
+  const lateLen    = circ * pLate;
+  const absentLen  = circ * pAbsent;
   setTimeout(() => {
-    d1.style.strokeDasharray = `${presentLen} ${circ - presentLen}`;
+    d1.style.strokeDasharray = presentLen + ' ' + (circ - presentLen);
     d1.style.strokeDashoffset = 0;
-    d2.style.strokeDasharray = `${lateLen} ${circ - lateLen}`;
-    d2.style.strokeDashoffset = -(presentLen);
-    d3.style.strokeDasharray = `${absentLen} ${circ - absentLen}`;
+    d2.style.strokeDasharray = lateLen + ' ' + (circ - lateLen);
+    d2.style.strokeDashoffset = -presentLen;
+    d3.style.strokeDasharray = absentLen + ' ' + (circ - absentLen);
     d3.style.strokeDashoffset = -(presentLen + lateLen);
   }, 200);
 }
@@ -1416,7 +1365,7 @@ function buildDonut() {
 function buildCalendar() {
   const grid = document.getElementById('calendarGrid');
   if (!grid) return;
-  const days = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+  const days = ['Ня','Да','Мя','Лх','Пү','Ба','Бя'];
   grid.innerHTML = '';
   days.forEach(d => {
     const h = document.createElement('div');
@@ -1424,18 +1373,14 @@ function buildCalendar() {
     h.textContent = d;
     grid.appendChild(h);
   });
-
-  for (let i = 0; i < 6; i++) {
-    const e = document.createElement('div');
-    e.className = 'cal-day empty';
-    grid.appendChild(e);
-  }
+  // March 2026 starts on Sunday (index 0) — so no offset needed
   const statuses = ['','','','','present','present','present','present','present','present','absent','present','present','late','present','present','present','present','present','present','present','present','late','present','','','','','','',''];
   for (let d = 1; d <= 31; d++) {
     const el = document.createElement('div');
-    el.className = 'cal-day' + (d === 17 ? ' today' : (statuses[d-1] ? ' ' + statuses[d-1] : ''));
+    const s = statuses[d-1] || '';
+    el.className = 'cal-day' + (d === 18 ? ' today' : (s ? ' ' + s : ''));
     el.textContent = d;
-    el.onclick = () => showToast(d === 17 ? 'Today' : `March ${d}`, 'info');
+    el.onclick = () => showToast(d === 18 ? 'Өнөөдөр' : '3-р сарын ' + d, 'info');
     grid.appendChild(el);
   }
 }
@@ -1445,43 +1390,38 @@ function buildTable(data) {
   if (!tbody) return;
   tbody.innerHTML = '';
   data.forEach((t, i) => {
-    const statusClass = `status-${t.status}`;
-    const statusLabel = t.status.charAt(0).toUpperCase() + t.status.slice(1);
-    const statusIcon = t.status === 'present' ? '✔' : t.status === 'absent' ? '❌' : '⏰';
+    const label = statusLabels[t.status] || t.status;
+    const icon  = statusIcons[t.status] || '';
     const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td style="color:var(--text-3);font-size:12px;font-family:'JetBrains Mono',monospace">${String(i+1).padStart(2,'0')}</td>
-      <td><div class="teacher-cell">
-        <div class="t-avatar" style="background:${t.color}">${t.initials}</div>
-        <div><div class="t-name">${t.name}</div></div>
-      </div></td>
-      <td><span style="font-size:12.5px;color:var(--text-2)">${t.dept}</span></td>
-      <td style="font-size:12.5px;color:var(--text-2);font-family:'JetBrains Mono',monospace">${t.date}</td>
-      <td style="font-size:12.5px;font-family:'JetBrains Mono',monospace;color:var(--text-2)">${t.checkin}</td>
-      <td><span class="status-badge ${statusClass}"><span class="status-dot"></span>${statusIcon} ${statusLabel}</span></td>
-      <td><div class="action-btns">
-        <button class="act-btn p" title="Present" onclick="markStatus(${t.id},'present',this)">✔</button>
-        <button class="act-btn a" title="Absent" onclick="markStatus(${t.id},'absent',this)">❌</button>
-        <button class="act-btn l" title="Late" onclick="markStatus(${t.id},'late',this)">⏰</button>
-      </div></td>
-    `;
+    tr.innerHTML =
+      '<td style="color:var(--text-3);font-size:12px;font-family:\'JetBrains Mono\',monospace">' + String(i+1).padStart(2,'0') + '</td>' +
+      '<td><div class="teacher-cell">' +
+        '<div class="t-avatar" style="background:' + t.color + '">' + t.initials + '</div>' +
+        '<div><div class="t-name">' + t.name + '</div></div>' +
+      '</div></td>' +
+      '<td><span style="font-size:12.5px;color:var(--text-2)">' + t.dept + '</span></td>' +
+      '<td style="font-size:12.5px;color:var(--text-2);font-family:\'JetBrains Mono\',monospace">' + t.date + '</td>' +
+      '<td style="font-size:12.5px;font-family:\'JetBrains Mono\',monospace;color:var(--text-2)">' + t.checkin + '</td>' +
+      '<td><span class="status-badge status-' + t.status + '"><span class="status-dot"></span>' + icon + ' ' + label + '</span></td>' +
+      '<td><div class="action-btns">' +
+        '<button class="act-btn p" title="Ирсэн" onclick="markStatus(' + t.id + ',\'present\',this)">✔</button>' +
+        '<button class="act-btn a" title="Ирээгүй" onclick="markStatus(' + t.id + ',\'absent\',this)">❌</button>' +
+        '<button class="act-btn l" title="Хоцорсон" onclick="markStatus(' + t.id + ',\'late\',this)">⏰</button>' +
+      '</div></td>';
     tbody.appendChild(tr);
   });
 }
 
 function markStatus(id, status, btn) {
-  const names = {present:'✔ Present', absent:'❌ Absent', late:'⏰ Late'};
-  const types = {present:'success', absent:'error', late:'info'};
+  const toastTypes = {present:'success', absent:'error', late:'info'};
   const teacher = teachers.find(t => t.id === id);
   if (teacher) {
     teacher.status = status;
     const row = btn.closest('tr');
     const badge = row.querySelector('.status-badge');
-    badge.className = `status-badge status-${status}`;
-    const icon = status === 'present' ? '✔' : status === 'absent' ? '❌' : '⏰';
-    const label = status.charAt(0).toUpperCase() + status.slice(1);
-    badge.innerHTML = `<span class="status-dot"></span>${icon} ${label}`;
-    showToast(`${teacher.name} marked as ${status}`, types[status]);
+    badge.className = 'status-badge status-' + status;
+    badge.innerHTML = '<span class="status-dot"></span>' + statusIcons[status] + ' ' + statusLabels[status];
+    showToast(teacher.name + ' — ' + statusLabels[status], toastTypes[status]);
   }
 }
 
@@ -1489,9 +1429,8 @@ function filterTable(query) {
   const q = query.toLowerCase();
   const filtered = teachers.filter(t => t.name.toLowerCase().includes(q) || t.dept.toLowerCase().includes(q));
   buildTable(filtered);
-  document.getElementById('tableCount').textContent = `Showing 1–${filtered.length} of ${filtered.length} teachers`;
+  document.getElementById('tableCount').textContent = filtered.length + ' багш харагдаж байна';
 }
-
 
 function initDashboard() {
   setTimeout(() => {
@@ -1501,12 +1440,11 @@ function initDashboard() {
   }, 100);
 }
 
-
 window.addEventListener('load', () => {
   initDashboard();
   buildCalendar();
   buildTable(teachers);
-  setTimeout(() => showToast('Welcome back, Sarah! 👋', 'success'), 800);
+  setTimeout(() => showToast('Тавтай морилно уу, Admin! 👋', 'success'), 800);
 });
 </script>
 </body>
