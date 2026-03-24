@@ -1,1451 +1,1747 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="light">
+<html lang="mn" data-theme="light">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Iet</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<title>Iet · Ирцийн Систем</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+
+<!-- jsQR for QR scanning -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsqr/1.4.0/jsQR.min.js"></script>
+<!-- QRCode generator -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword,
+  signOut, onAuthStateChanged, sendPasswordResetEmail
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import {
+  getFirestore, collection, getDocs, addDoc, doc, getDoc,
+  setDoc, query, where, serverTimestamp, onSnapshot
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDOb_CZ5shzXUiUcOz-o3WA4afvIj5Ja4Y",
+  authDomain: "teacher-74dbd.firebaseapp.com",
+  projectId: "teacher-74dbd",
+  storageBucket: "teacher-74dbd.firebasestorage.app",
+  messagingSenderId: "49415662985",
+  appId: "1:49415662985:web:549545505ae1abcb758558"
+};
+
+const app  = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db   = getFirestore(app);
+
+// ─── DEMO DATA ────────────────────────────────────────────────
+const DEMO_TEACHERS = [
+  { id:"t1",  name:"Анна Пүрэвсүрэн",  dept:"Англи хэл",   room:"А-101", email:"anna@iet.mn",    color:"#7C3AED", initials:"АП", joinYear:2018, rating:4.9, role:"teacher" },
+  { id:"t2",  name:"Мөнх Баатар",       dept:"Математик",    room:"Б-204", email:"munkh@iet.mn",   color:"#2563EB", initials:"МБ", joinYear:2017, rating:4.8, role:"teacher" },
+  { id:"t3",  name:"Сараа Дорж",        dept:"Хими",         room:"В-305", email:"saraa@iet.mn",   color:"#D97706", initials:"СД", joinYear:2019, rating:4.5, role:"teacher" },
+  { id:"t4",  name:"Баяр Эрдэнэ",       dept:"Биеийн тамир", room:"Г-001", email:"bayar@iet.mn",   color:"#059669", initials:"БЭ", joinYear:2016, rating:4.7, role:"teacher" },
+  { id:"t5",  name:"Даваа Цэрэн",       dept:"Түүх",         room:"А-203", email:"davaa@iet.mn",   color:"#10B981", initials:"ДЦ", joinYear:2020, rating:4.3, role:"teacher" },
+  { id:"t6",  name:"Долгор Намжил",     dept:"Зураг",        room:"Б-102", email:"dolgор@iet.mn",  color:"#EC4899", initials:"ДН", joinYear:2021, rating:4.6, role:"teacher" },
+  { id:"t7",  name:"Манлай Гантулга",   dept:"Хими",         room:"В-201", email:"manlai@iet.mn",  color:"#06B6D4", initials:"МГ", joinYear:2018, rating:4.4, role:"teacher" },
+  { id:"t8",  name:"Нарансолонго Бат",  dept:"Биеийн тамир", room:"Г-002", email:"naranso@iet.mn", color:"#14B8A6", initials:"НБ", joinYear:2022, rating:4.2, role:"teacher" },
+  { id:"t9",  name:"Галаа Сүхбаатар",  dept:"Биологи",      room:"А-301", email:"galaa@iet.mn",   color:"#22C55E", initials:"ГС", joinYear:2019, rating:4.5, role:"teacher" },
+  { id:"t10", name:"Бат Эрдэнэ",        dept:"Зураг",        room:"Б-103", email:"bate@iet.mn",    color:"#8B5CF6", initials:"БТ", joinYear:2017, rating:4.7, role:"teacher" },
+  { id:"t11", name:"Мөнх Эрдэнэ",       dept:"Физик",        room:"В-302", email:"munkhe@iet.mn",  color:"#F97316", initials:"МЭ", joinYear:2020, rating:4.1, role:"teacher" },
+  { id:"t12", name:"Баяр Чулуун",       dept:"Математик",    room:"Б-205", email:"bayarc@iet.mn",  color:"#3B82F6", initials:"БЧ", joinYear:2015, rating:4.9, role:"teacher" },
+];
+
+const DEMO_USER_ADMIN   = { uid:"demo_admin",   email:"admin@iet.mn",  name:"Администратор", role:"admin",   teacherId:null };
+const DEMO_USER_TEACHER = { uid:"demo_t1",      email:"anna@iet.mn",   name:"Анна Пүрэвсүрэн", role:"teacher", teacherId:"t1" };
+
+function getTodayStr() { return new Date().toISOString().split("T")[0]; }
+
+function makeDemoAttendance(teachers, dateStr) {
+  const statuses = ["present","present","present","present","present","late","absent","present","present","present","present","present"];
+  return teachers.map((t,i) => ({
+    id:`${t.id}_${dateStr}`, teacherId:t.id, teacherName:t.name, dept:t.dept, date:dateStr,
+    status:statuses[i%statuses.length],
+    checkinTime:statuses[i%statuses.length]==="absent"?null:(statuses[i%statuses.length]==="late"?"8:24":`7:${String(50+i).padStart(2,"0")}`),
+    note:"", method: i===0?"qr":"manual"
+  }));
+}
+
+// ─── STATE ───────────────────────────────────────────────────
+window._iet = { user:null, teachers:[], attendance:[], page:"dashboard", demo:false };
+
+// ─── QR SCANNER STATE ─────────────────────────────────────────
+let qrStream = null;
+let qrAnimFrame = null;
+let qrLastScanned = {};
+
+// ─── REALTIME LISTENERS ─────────────────────────────────────────
+let unsubTeachers = null;
+let unsubAttendance = null;
+
+// ─── AUTH ─────────────────────────────────────────────────────
+async function loginWithEmail(email, password) {
+  // Real Firebase login only
+  const cred = await signInWithEmailAndPassword(auth, email, password);
+  const prof = await getDoc(doc(db, "users", cred.user.uid));
+  const data = prof.exists() ? prof.data() : {};
+  return { uid: cred.user.uid, email: cred.user.email, role: "admin", ...data };
+}
+
+async function signUpWithEmail(email, password, name) {
+  const cred = await createUserWithEmailAndPassword(auth, email, password);
+  await setDoc(doc(db, "users", cred.user.uid), { email, name, role:"admin", createdAt:serverTimestamp() });
+  return { uid:cred.user.uid, email, name, role:"admin" };
+}
+
+async function doLogout() {
+  if (!window._iet.demo) await signOut(auth);
+  window._iet.user = null;
+  stopQRScanner();
+  stopRealtimeListeners();
+  showLogin();
+}
+window.doLogout = doLogout;
+
+// ─── DATA ─────────────────────────────────────────────────────
+async function loadTeachers() {
+  if (window._iet.demo) { window._iet.teachers = DEMO_TEACHERS; return; }
+  const snap = await getDocs(collection(db,"teachers"));
+  window._iet.teachers = snap.docs.map(d=>({id:d.id,...d.data()}));
+}
+
+function startRealtimeListeners(){
+  stopRealtimeListeners();
+
+  const teachersRef = collection(db, "teachers");
+  unsubTeachers = onSnapshot(teachersRef, snap => {
+    window._iet.teachers = snap.docs.map(d=>({id:d.id,...d.data()}));
+    if (window._iet.page === "teachers") renderTeachersList();
+    if (window._iet.page === "attendance") renderAttendanceTable();
+    renderDashboard();
+    renderMyAttendance();
+  });
+
+  const attendanceRef = query(collection(db, "attendance"), where("date", "==", getTodayStr()));
+  unsubAttendance = onSnapshot(attendanceRef, snap => {
+    window._iet.attendance = snap.docs.map(d=>({id:d.id,...d.data()}));
+    renderDashboard();
+    renderAttendanceTable();
+    renderMyAttendance();
+    renderQRLog();
+  });
+}
+
+function stopRealtimeListeners(){
+  if (unsubTeachers) { unsubTeachers(); unsubTeachers=null; }
+  if (unsubAttendance){ unsubAttendance(); unsubAttendance=null; }
+}
+
+async function loadTodayAttendance() {
+  const dateStr = getTodayStr();
+  if (window._iet.demo) { window._iet.attendance = makeDemoAttendance(window._iet.teachers, dateStr); return; }
+  const q = query(collection(db,"attendance"), where("date","==",dateStr));
+  const snap = await getDocs(q);
+  window._iet.attendance = snap.docs.map(d=>({id:d.id,...d.data()}));
+}
+
+async function saveAttendance(teacherId, status, method="manual") {
+  const dateStr = getTodayStr();
+  const hour = status==="late"?"8":"7";
+  const min  = String(Math.floor(Math.random()*59)).padStart(2,"0");
+  const checkinTime = status==="absent"?null:`${hour}:${min}`;
+  const teacher = window._iet.teachers.find(t=>t.id===teacherId);
+
+  if (window._iet.demo) {
+    const idx = window._iet.attendance.findIndex(a=>a.teacherId===teacherId);
+    const record = { id:`${teacherId}_${dateStr}`, teacherId, teacherName:teacher?.name||"", dept:teacher?.dept||"", date:dateStr, status, checkinTime, note:"", method };
+    if (idx>=0) window._iet.attendance[idx]=record; else window._iet.attendance.push(record);
+    return;
+  }
+  const id = `${teacherId}_${dateStr}`;
+  await setDoc(doc(db,"attendance",id), {
+    teacherId, teacherName:teacher?.name||"", dept:teacher?.dept||"",
+    date:dateStr, status, checkinTime, note:"", method, updatedAt:serverTimestamp()
+  }, {merge:true});
+  await loadTodayAttendance();
+}
+window.saveAttendance = saveAttendance;
+
+async function addTeacher(data) {
+  if (window._iet.demo) {
+    const newT = { id:"t"+Date.now(), ...data, initials:data.name.slice(0,2).toUpperCase(), color:"#6366F1", joinYear:new Date().getFullYear(), rating:0, role:"teacher" };
+    window._iet.teachers.push(newT); return newT.id;
+  }
+  const ref = await addDoc(collection(db,"teachers"), {...data, createdAt:serverTimestamp()});
+  await loadTeachers(); return ref.id;
+}
+
+// ─── ROLE HELPERS ─────────────────────────────────────────────
+function isAdmin() { return window._iet.user?.role === "admin"; }
+function currentTeacherId() { return window._iet.user?.teacherId || null; }
+
+// ─── UI HELPERS ───────────────────────────────────────────────
+function toast(msg, type="info") {
+  const icons = {success:"✓",error:"✕",info:"i"};
+  const c = document.getElementById("toasts");
+  const t = document.createElement("div");
+  t.className = "toast "+type;
+  t.innerHTML = `<div class="toast-icon">${icons[type]}</div><span>${msg}</span><button onclick="this.parentElement.remove()">×</button>`;
+  c.appendChild(t);
+  setTimeout(()=>{ t.classList.add("out"); setTimeout(()=>t.remove(),250); },3500);
+}
+window.toast = toast;
+
+function showLogin() { document.getElementById("auth-screen").style.display="flex"; document.getElementById("app-screen").style.display="none"; }
+function showApp()   { document.getElementById("auth-screen").style.display="none"; document.getElementById("app-screen").style.display="flex"; }
+
+function setLoading(v) {
+  const btn = document.getElementById("login-btn");
+  btn.disabled=v;
+  btn.innerHTML=v?`<div class="spinner"></div> Нэвтэрч байна...`:`Нэвтрэх`;
+}
+
+function applyRoleUI() {
+  const admin = isAdmin();
+  // Show/hide admin-only nav items
+  document.querySelectorAll(".admin-only").forEach(el => el.style.display = admin?"":"none");
+  // Show/hide teacher-only items
+  document.querySelectorAll(".teacher-only").forEach(el => el.style.display = admin?"none":"");
+  // Role badge in sidebar
+  const roleBadge = document.getElementById("sidebar-role");
+  if (roleBadge) {
+    roleBadge.textContent = admin ? "Администратор" : "Багш";
+    roleBadge.className = "role-badge " + (admin?"role-admin":"role-teacher");
+  }
+}
+
+function navigate(page) {
+  // Role guard
+  const adminPages = ["dashboard","attendance","teachers","reports","settings"];
+  const teacherPages = ["my-attendance","qr-scan"];
+  if (!isAdmin() && adminPages.includes(page) && page!=="qr-scan") {
+    page = "my-attendance";
+  }
+  if (isAdmin() && teacherPages.includes(page) && page!=="qr-scan") {
+    page = "dashboard";
+  }
+
+  window._iet.page = page;
+  document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
+  document.querySelectorAll(".nav-item[data-page]").forEach(n=>n.classList.remove("active"));
+  const el = document.getElementById("page-"+page);
+  if (el) el.classList.add("active");
+  const ni = document.querySelector(`.nav-item[data-page="${page}"]`);
+  if (ni) ni.classList.add("active");
+
+  const names = {dashboard:"Хяналтын самбар",attendance:"Ирц",teachers:"Багш нар",reports:"Тайлан",settings:"Тохиргоо","qr-scan":"QR Скан","my-attendance":"Миний Ирц"};
+  document.getElementById("topbarTitle").textContent = names[page]||page;
+
+  closeSidebar();
+  if (page==="dashboard")      renderDashboard();
+  if (page==="attendance")     renderAttendanceTable();
+  if (page==="teachers")       renderTeachersList();
+  if (page==="qr-scan")        initQRScanPage();
+  if (page==="my-attendance")  renderMyAttendance();
+
+  // Stop QR scanner when navigating away
+  if (page!=="qr-scan") stopQRScanner();
+}
+window.navigate = navigate;
+
+function toggleSidebar() { document.getElementById("sidebar").classList.toggle("open"); document.getElementById("mOverlay").classList.toggle("show"); }
+function closeSidebar()  { document.getElementById("sidebar").classList.remove("open"); document.getElementById("mOverlay").classList.remove("show"); }
+function toggleTheme() {
+  const dark = document.documentElement.getAttribute("data-theme")==="dark";
+  document.documentElement.setAttribute("data-theme",dark?"light":"dark");
+  toast(dark?"Гэрэл горим":"Харанхуй горим","info");
+}
+window.toggleSidebar=toggleSidebar; window.closeSidebar=closeSidebar; window.toggleTheme=toggleTheme;
+window.filterTable = function(v){ renderAttendanceTable(v); };
+
+// ─── QR CODE GENERATOR ────────────────────────────────────────
+function generateQRPayload(teacherId) {
+  return JSON.stringify({ type:"iet-attendance", teacherId, ts: Date.now() });
+}
+
+window.showTeacherQR = function(teacherId) {
+  const t = window._iet.teachers.find(t=>t.id===teacherId);
+  if (!t) return;
+  const modal = document.getElementById("qrModal");
+  document.getElementById("qr-modal-name").textContent = t.name;
+  document.getElementById("qr-modal-dept").textContent = t.dept;
+  document.getElementById("qr-modal-ava").style.background = t.color;
+  document.getElementById("qr-modal-ava").textContent = t.initials;
+
+  const container = document.getElementById("qr-code-display");
+  container.innerHTML = "";
+  try {
+    new QRCode(container, {
+      text: generateQRPayload(teacherId),
+      width: 200, height: 200,
+      colorDark: getComputedStyle(document.documentElement).getPropertyValue('--ink').trim()||"#0D1117",
+      colorLight: getComputedStyle(document.documentElement).getPropertyValue('--surface').trim()||"#ffffff",
+      correctLevel: QRCode.CorrectLevel.H
+    });
+  } catch(e) {
+    container.innerHTML = `<div style="width:200px;height:200px;display:flex;align-items:center;justify-content:center;background:var(--surface2);border-radius:12px;font-size:13px;color:var(--ink3)">QR үүсгэхэд алдаа</div>`;
+  }
+
+  modal.style.display = "flex";
+};
+window.closeQRModal = function() { document.getElementById("qrModal").style.display="none"; };
+
+// ─── QR SCANNER ───────────────────────────────────────────────
+function initQRScanPage() {
+  const statusEl = document.getElementById("qr-status");
+  if (statusEl) statusEl.textContent = "Камер эхлүүлж байна...";
+  setTimeout(startQRScanner, 300);
+}
+
+async function startQRScanner() {
+  const video = document.getElementById("qr-video");
+  const canvas = document.getElementById("qr-canvas");
+  const statusEl = document.getElementById("qr-status");
+  if (!video || !canvas) return;
+
+  // Stop existing stream
+  stopQRScanner();
+
+  try {
+    qrStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: "environment", width:{ideal:640}, height:{ideal:480} }
+    });
+    video.srcObject = qrStream;
+    video.setAttribute("playsinline", true);
+    await video.play();
+    if (statusEl) statusEl.textContent = "QR кодыг камер руу чиглүүлнэ үү";
+    requestAnimationFrame(scanQRFrame);
+  } catch(err) {
+    if (statusEl) {
+      if (err.name==="NotAllowedError") {
+        statusEl.textContent = "⚠️ Камерын зөвшөөрөл олгоогүй байна. Браузерын тохиргооноос зөвшөөрнэ үү.";
+      } else {
+        statusEl.textContent = "⚠️ Камер олдсонгүй: "+err.message;
+      }
+    }
+    // Show manual fallback
+    const fallback = document.getElementById("qr-manual-fallback");
+    if (fallback) fallback.style.display = "block";
+  }
+}
+window.startQRScanner = startQRScanner;
+
+function stopQRScanner() {
+  if (qrAnimFrame) { cancelAnimationFrame(qrAnimFrame); qrAnimFrame=null; }
+  if (qrStream) { qrStream.getTracks().forEach(t=>t.stop()); qrStream=null; }
+  const video = document.getElementById("qr-video");
+  if (video) { video.srcObject=null; }
+}
+
+function scanQRFrame() {
+  if (!qrStream) return;
+  const video = document.getElementById("qr-video");
+  const canvas = document.getElementById("qr-canvas");
+  if (!video || !canvas || video.readyState!==video.HAVE_ENOUGH_DATA) {
+    qrAnimFrame = requestAnimationFrame(scanQRFrame); return;
+  }
+  const ctx = canvas.getContext("2d");
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+  const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts:"dontInvert" });
+  if (code) {
+    handleQRScan(code.data);
+  }
+  qrAnimFrame = requestAnimationFrame(scanQRFrame);
+}
+
+async function handleQRScan(data) {
+  try {
+    const payload = JSON.parse(data);
+    if (payload.type !== "iet-attendance") return;
+    const teacherId = payload.teacherId;
+    const now = Date.now();
+
+    // Debounce: same teacher within 5 seconds
+    if (qrLastScanned[teacherId] && now - qrLastScanned[teacherId] < 5000) return;
+    qrLastScanned[teacherId] = now;
+
+    const teacher = window._iet.teachers.find(t=>t.id===teacherId);
+    if (!teacher) { toast("Багш олдсонгүй","error"); return; }
+
+    // Check if already marked
+    const existing = window._iet.attendance.find(a=>a.teacherId===teacherId);
+    if (existing && existing.status==="present") {
+      showQRFeedback(teacher, "already");
+      return;
+    }
+
+    const hour = new Date().getHours();
+    const status = hour >= 8 ? "late" : "present";
+    await saveAttendance(teacherId, status, "qr");
+
+    showQRFeedback(teacher, status);
+    renderQRLog();
+  } catch(e) {
+    // Not valid JSON, ignore
+  }
+}
+
+function showQRFeedback(teacher, status) {
+  const feedback = document.getElementById("qr-feedback");
+  if (!feedback) return;
+
+  const configs = {
+    present: { icon:"✓", label:"Ирсэн", cls:"qr-fb-success" },
+    late:    { icon:"⏰", label:"Хоцорсон", cls:"qr-fb-late" },
+    already: { icon:"ℹ", label:"Аль хэдийн бүртгэгдсэн", cls:"qr-fb-info" },
+  };
+  const cfg = configs[status]||configs.present;
+
+  feedback.className = "qr-feedback-card "+cfg.cls+" show";
+  feedback.innerHTML = `
+    <div class="qr-fb-icon">${cfg.icon}</div>
+    <div class="qr-fb-ava" style="background:${teacher.color}">${teacher.initials}</div>
+    <div class="qr-fb-name">${teacher.name}</div>
+    <div class="qr-fb-dept">${teacher.dept}</div>
+    <div class="qr-fb-status">${cfg.label}</div>
+  `;
+
+  if (status!=="already") toast(`${teacher.name} — QR скан: ${cfg.label}`, status==="present"?"success":"info");
+  setTimeout(()=>{ feedback.classList.remove("show"); }, 4000);
+}
+
+function renderQRLog() {
+  const log = document.getElementById("qr-scan-log");
+  if (!log) return;
+  const qrEntries = window._iet.attendance
+    .filter(a=>a.method==="qr")
+    .slice(-8).reverse();
+  if (!qrEntries.length) {
+    log.innerHTML = `<div class="qr-log-empty">Одоохондоо QR скан бүртгэл байхгүй</div>`; return;
+  }
+  log.innerHTML = qrEntries.map(a=>{
+    const t = window._iet.teachers.find(t=>t.id===a.teacherId)||{color:"#6366F1",initials:"?"};
+    const cls = {present:"qr-log-p",late:"qr-log-l",absent:"qr-log-a"}[a.status]||"";
+    const lbl = {present:"Ирсэн",late:"Хоцорсон",absent:"Ирээгүй"}[a.status]||"";
+    return `<div class="qr-log-item">
+      <div class="qr-log-ava" style="background:${t.color}">${t.initials}</div>
+      <div class="qr-log-info"><div class="qr-log-name">${a.teacherName}</div><div class="qr-log-dept">${a.dept}</div></div>
+      <span class="qr-log-badge ${cls}">${lbl}</span>
+      <span class="qr-log-time">${a.checkinTime||"—"}</span>
+    </div>`;
+  }).join("");
+}
+window.renderQRLog = renderQRLog;
+
+// Manual QR input (fallback)
+window.handleManualQRInput = function() {
+  const inp = document.getElementById("qr-manual-input");
+  if (!inp || !inp.value.trim()) return;
+  handleQRScan(inp.value.trim());
+  inp.value = "";
+};
+
+// ─── MY ATTENDANCE (Teacher view) ─────────────────────────────
+function renderMyAttendance() {
+  const tid = currentTeacherId();
+  const teacher = window._iet.teachers.find(t=>t.id===tid);
+  const el = document.getElementById("my-att-content");
+  if (!el) return;
+
+  if (!teacher) {
+    el.innerHTML = `<div class="empty-state">Багшийн мэдээлэл холбогдоогүй байна. Администратортой холбогдоно уу.</div>`;
+    return;
+  }
+
+  const rec = window._iet.attendance.find(a=>a.teacherId===tid);
+  const status = rec?.status||"absent";
+  const checkin = rec?.checkinTime||"—";
+  const method = rec?.method||"manual";
+  const cls = {present:"my-stat-p",absent:"my-stat-a",late:"my-stat-l"}[status];
+  const lbl = {present:"✓ Ирсэн",absent:"✕ Ирээгүй",late:" Хоцорсон"}[status];
+
+  const weekStats = [
+    {day:"Да",s:"present"},{day:"Мя",s:"present"},{day:"Лх",s:"late"},{day:"Пү",s:"present"},{day:"Ба",s:"present"},
+  ];
+
+  el.innerHTML = `
+    <div class="my-profile-card">
+      <div class="my-ava" style="background:${teacher.color}">${teacher.initials}</div>
+      <div class="my-info">
+        <div class="my-name">${teacher.name}</div>
+        <div class="my-dept">${teacher.dept} · ${teacher.room}</div>
+        <div class="my-join"> ${teacher.joinYear} оноос · ⭐ ${teacher.rating}</div>
+      </div>
+    </div>
+    <div class="my-today-card">
+      <div class="my-today-label">Өнөөдрийн ирц · ${new Date().toLocaleDateString("mn-MN",{year:"numeric",month:"long",day:"numeric"})}</div>
+      <div class="my-today-status">
+        <span class="my-status-pill ${cls}">${lbl}</span>
+        <span class="my-checkin-time">${checkin !== "—" ? " "+checkin : "Бүртгэгдээгүй"}</span>
+        <span class="my-method-badge">${method==="qr"?" QR скан":" Гар бүртгэл"}</span>
+      </div>
+    </div>
+    <div class="my-week-card">
+      <div class="my-section-title">7 хоногийн ирц</div>
+      <div class="my-week-grid">
+        ${weekStats.map(w=>{
+          const wc={present:"week-p",late:"week-l",absent:"week-a"}[w.s];
+          const wi={present:"✓",late:"⏰",absent:"✕"}[w.s];
+          return `<div class="week-day"><div class="week-dot ${wc}">${wi}</div><div class="week-label">${w.day}</div></div>`;
+        }).join("")}
+      </div>
+    </div>
+    <div class="my-qr-card">
+      <div class="my-section-title">Миний QR код</div>
+      <div class="my-qr-desc">Ирцийн QR скан станц дээр энэ кодыг уншуулна уу</div>
+      <div id="my-qr-code" class="my-qr-display"></div>
+      <button class="btn btn-primary" onclick="refreshMyQR('${teacher.id}')">🔄 Шинэчлэх</button>
+    </div>
+  `;
+
+
+  refreshMyQR(teacher.id);
+}
+
+window.refreshMyQR = function(teacherId) {
+  const container = document.getElementById("my-qr-code");
+  if (!container) return;
+  container.innerHTML = "";
+  try {
+    new QRCode(container, {
+      text: generateQRPayload(teacherId),
+      width: 180, height: 180,
+      colorDark: "#0D1117",
+      colorLight: "#ffffff",
+      correctLevel: QRCode.CorrectLevel.H
+    });
+  } catch(e) {
+    container.innerHTML = `<div style="padding:20px;color:var(--ink3);font-size:13px">QR үүсгэхэд алдаа</div>`;
+  }
+};
+
+// ─── DASHBOARD ────────────────────────────────────────────────
+function renderDashboard() {
+  const att  = window._iet.attendance;
+  const tot  = window._iet.teachers.length;
+  const pres = att.filter(a=>a.status==="present").length;
+  const abs  = att.filter(a=>a.status==="absent").length;
+  const late = att.filter(a=>a.status==="late").length;
+  const qrCount = att.filter(a=>a.method==="qr").length;
+  const pct  = tot>0?Math.round(pres/tot*100):0;
+
+  animateCount("kpi-total",   tot);
+  animateCount("kpi-present", pres);
+  animateCount("kpi-absent",  abs);
+  animateCount("kpi-late",    late);
+
+  const sub = document.getElementById("kpi-pct-sub");
+  if (sub) sub.textContent = `${pct}% ирцийн хувь`;
+  const qrEl = document.getElementById("kpi-qr-count");
+  if (qrEl) qrEl.textContent = `📷 ${qrCount} QR скан`;
+
+  const badge = document.getElementById("absent-badge");
+  if (badge) badge.textContent = abs;
+
+  buildDonut(pres, abs, late, tot);
+  buildBarChart();
+  renderActivity();
+  renderLeaderboard();
+}
+
+function animateCount(id, target) {
+  const el = document.getElementById(id); if (!el) return;
+  const dur=900, step=target/(dur/16); let cur=0;
+  const t=setInterval(()=>{ cur=Math.min(cur+step,target); el.textContent=Math.floor(cur); if(cur>=target)clearInterval(t); },16);
+}
+
+function buildDonut(p,a,l,tot) {
+  if (!tot) return;
+  const circ=2*Math.PI*38;
+  const pp=p/tot, pl=l/tot, pa=a/tot;
+  const d1=document.getElementById("d1"),d2=document.getElementById("d2"),d3=document.getElementById("d3");
+  if (!d1) return;
+  document.querySelector(".donut-num").textContent=Math.round(pp*100)+"%";
+  setTimeout(()=>{
+    d1.style.strokeDasharray=`${circ*pp} ${circ*(1-pp)}`;
+    d2.style.strokeDasharray=`${circ*pl} ${circ*(1-pl)}`; d2.style.strokeDashoffset=`${-circ*pp}`;
+    d3.style.strokeDasharray=`${circ*pa} ${circ*(1-pa)}`; d3.style.strokeDashoffset=`${-circ*(pp+pl)}`;
+  },100);
+  const sv=document.getElementById("donut-p"); if(sv)sv.textContent=p;
+  const sa=document.getElementById("donut-a"); if(sa)sa.textContent=a;
+  const sl=document.getElementById("donut-l"); if(sl)sl.textContent=l;
+}
+
+function buildBarChart() {
+  const data = [{day:"Да",p:92,a:8,l:4},{day:"Мя",p:88,a:12,l:6},{day:"Лх",p:95,a:6,l:3},{day:"Пү",p:90,a:10,l:5},{day:"Ба",p:85,a:15,l:7}];
+  const max=110, c=document.getElementById("barChart"); if(!c) return;
+  c.innerHTML="";
+  data.forEach(d=>{
+    const g=document.createElement("div"); g.className="bar-group";
+    g.innerHTML=`<div class="bars-inner">
+      <div class="bar p" data-tip="${d.p}" style="height:${Math.max(d.p/max*130,d.p?3:0)}px"></div>
+      <div class="bar a" data-tip="${d.a}" style="height:${Math.max(d.a/max*130,d.a?3:0)}px"></div>
+      <div class="bar l" data-tip="${d.l}" style="height:${Math.max(d.l/max*130,d.l?3:0)}px"></div>
+    </div><div class="bar-lbl">${d.day}</div>`;
+    c.appendChild(g);
+  });
+}
+
+function renderActivity() {
+  const c=document.getElementById("activityList"); if(!c) return;
+  const recent=[...window._iet.attendance].slice(0,6);
+  const countEl=document.getElementById("activity-count");
+  if(countEl) countEl.textContent=recent.length;
+  c.innerHTML=recent.map(a=>{
+    const t=window._iet.teachers.find(t=>t.id===a.teacherId)||{name:a.teacherName,color:"#6366F1",initials:"?"};
+    const badge={present:"badge-p Ирсэн",absent:"badge-a Ирээгүй",late:"badge-l Хоцорсон"}[a.status];
+    const methodIcon = a.method==="qr"?"📷 ":"";
+    return `<div class="act-item">
+      <div class="act-ava" style="background:${t.color||"#6366F1"}">${t.initials||"?"}</div>
+      <div class="act-info"><div class="act-name">${a.teacherName||t.name}</div><div class="act-dept">${a.dept}</div></div>
+      <span class="act-badge ${badge.split(" ")[0]}">${badge.split(" ")[1]}</span>
+      <span class="act-time">${methodIcon}${a.checkinTime||"—"}</span>
+    </div>`;
+  }).join("");
+}
+
+function renderLeaderboard() {
+  const medals=["1","2","3"];
+  const top=window._iet.teachers.slice(0,5);
+  const el=document.getElementById("leaderboard"); if(!el) return;
+  el.innerHTML=top.map((t,i)=>`
+    <div class="perf-item">
+      <div class="perf-rank">${medals[i]||i+1}</div>
+      <div class="perf-ava" style="background:${t.color}">${t.initials}</div>
+      <div style="flex:1">
+        <div class="perf-name">${t.name}</div>
+        <div class="perf-sub">${t.dept}</div>
+        <div class="perf-bar-track"><div class="perf-bar-fill" style="width:${100-i*2}%"></div></div>
+      </div>
+      <div class="perf-pct">${100-i*2}%</div>
+    </div>`).join("");
+}
+
+
+function renderAttendanceTable(filter="") {
+  const tb=document.getElementById("tableBody"); if(!tb) return;
+  let teachers=window._iet.teachers;
+  if (!isAdmin()) {
+    teachers = teachers.filter(t=>t.id===currentTeacherId());
+  }
+  if (filter) {
+    teachers=teachers.filter(t=>t.name.toLowerCase().includes(filter.toLowerCase())||t.dept.toLowerCase().includes(filter.toLowerCase()));
+  }
+  const att=window._iet.attendance;
+  tb.innerHTML=teachers.map((t,i)=>{
+    const rec=att.find(a=>a.teacherId===t.id);
+    const status=rec?.status||"absent";
+    const checkin=rec?.checkinTime||"—";
+    const method=rec?.method||"manual";
+    const today=new Date().toLocaleDateString("mn-MN");
+    const cls={present:"sp-p",absent:"sp-a",late:"sp-l"}[status];
+    const lbl={present:"✓ Ирсэн",absent:"✕ Ирээгүй",late:"⏰ Хоцорсон"}[status];
+    const methodBadge=method==="qr"?`<span class="method-qr">📷 QR</span>`:`<span class="method-manual">✋</span>`;
+    const adminActions = isAdmin() ? `<div class="action-group">
+      <button class="act-btn p" title="Ирсэн"    onclick="quickMark('${t.id}','present')">✓</button>
+      <button class="act-btn a" title="Ирээгүй"  onclick="quickMark('${t.id}','absent')">✕</button>
+      <button class="act-btn l" title="Хоцорсон" onclick="quickMark('${t.id}','late')">⏰</button>
+      <button class="act-btn q" title="QR код"   onclick="showTeacherQR('${t.id}')">📷</button>
+    </div>` : `<span style="font-size:12px;color:var(--ink3)">—</span>`;
+    return `<tr>
+      <td style="color:var(--ink3);font-size:12px">${String(i+1).padStart(2,"0")}</td>
+      <td><div class="teacher-cell">
+        <div class="t-ava" style="background:${t.color}">${t.initials}</div>
+        <div><div class="t-name">${t.name}</div><div class="t-dept">${t.dept}</div></div>
+      </div></td>
+      <td style="font-size:13px;color:var(--ink2)">${t.dept}</td>
+      <td style="font-size:12px;color:var(--ink3)">${today}</td>
+      <td style="font-size:12.5px;color:var(--ink2)">${checkin} ${methodBadge}</td>
+      <td><span class="status-pill ${cls}" id="pill-${t.id}"><span class="sp-dot"></span>${lbl}</span></td>
+      <td>${adminActions}</td>
+    </tr>`;
+  }).join("");
+  document.getElementById("tableCount").textContent=`${teachers.length} багш харагдаж байна`;
+}
+
+window.quickMark = async function(teacherId, status) {
+  await saveAttendance(teacherId, status, "manual");
+  const cls={present:"sp-p",absent:"sp-a",late:"sp-l"}[status];
+  const lbl={present:"✓ Ирсэн",absent:"✕ Ирээгүй",late:"⏰ Хоцорсон"}[status];
+  const pill=document.getElementById(`pill-${teacherId}`);
+  if(pill){ pill.className=`status-pill ${cls}`; pill.innerHTML=`<span class="sp-dot"></span>${lbl}`; }
+  const t=window._iet.teachers.find(t=>t.id===teacherId);
+  toast(`${t?.name} — ${lbl}`,"success");
+  renderDashboard();
+};
+
+
+function renderTeachersList() {
+  const c=document.getElementById("teacherCards"); if(!c) return;
+  const countEl=document.getElementById("teacher-count");
+  if(countEl) countEl.textContent=window._iet.teachers.length;
+  c.innerHTML=window._iet.teachers.map(t=>`
+    <div class="teacher-card">
+      <div class="tc-header" style="background:${t.color}">
+        <div class="tc-ava">${t.initials}</div>
+      </div>
+      <div class="tc-body">
+        <div class="tc-name">${t.name}</div>
+        <div class="tc-dept">${t.dept}</div>
+        <div class="tc-meta">
+          <span>📍 ${t.room}</span>
+          <span>⭐ ${t.rating||"—"}</span>
+          <span>📅 ${t.joinYear}</span>
+        </div>
+        <div class="tc-actions">
+          <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px" onclick="showTeacherQR('${t.id}')">📷 QR</button>
+          <button class="btn btn-primary" style="font-size:12px;padding:6px 12px" onclick="openMarkModal('${t.id}')">Тэмдэглэх</button>
+        </div>
+      </div>
+    </div>`).join("");
+}
+
+window.openMarkModal = function(teacherId) {
+  const t=window._iet.teachers.find(t=>t.id===teacherId); if(!t) return;
+  const modal=document.getElementById("markModal");
+  document.getElementById("modal-teacher-name").textContent=t.name;
+  document.getElementById("modal-teacher-dept").textContent=t.dept;
+  document.getElementById("modal-teacher-ava").style.background=t.color;
+  document.getElementById("modal-teacher-ava").textContent=t.initials;
+  modal._teacherId=teacherId;
+  modal.style.display="flex";
+};
+window.closeModal  = function(){ document.getElementById("markModal").style.display="none"; };
+window.confirmMark = async function(status){ const id=document.getElementById("markModal")._teacherId; await window.quickMark(id,status); window.closeModal(); };
+
+
+window.openAddTeacher  = function(){ document.getElementById("addTeacherModal").style.display="flex"; };
+window.closeAddTeacher = function(){ document.getElementById("addTeacherModal").style.display="none"; };
+window.submitAddTeacher = async function(){
+  const name=document.getElementById("at-name").value.trim();
+  const dept=document.getElementById("at-dept").value.trim();
+  const room=document.getElementById("at-room").value.trim();
+  const email=document.getElementById("at-email").value.trim();
+  if(!name||!dept){ toast("Нэр, тэнхим заавал бөглөнө үү","error"); return; }
+  const btn=document.getElementById("at-submit");
+  btn.disabled=true; btn.textContent="Нэмж байна...";
+  await addTeacher({name,dept,room,email,initials:name.slice(0,2).toUpperCase(),color:"#6366F1"});
+  toast(`${name} нэмэгдлээ`,"success");
+  window.closeAddTeacher();
+  renderTeachersList();
+  btn.disabled=false; btn.textContent="Нэмэх";
+  ["at-name","at-dept","at-room","at-email"].forEach(id=>document.getElementById(id).value="");
+};
+
+
+window.handleLogin = async function(e) {
+  e.preventDefault();
+  const email=document.getElementById("email-input").value.trim();
+  const pass=document.getElementById("pass-input").value;
+  const errEl=document.getElementById("login-error");
+  errEl.textContent=""; errEl.style.display="none";
+  setLoading(true);
+  try {
+    const user = await loginWithEmail(email, pass);
+    window._iet.user = user;
+    window._iet.demo = false;
+    setLoading(false);
+    const initials=(user.name||user.email||"?").slice(0,2).toUpperCase();
+    document.getElementById("sidebar-ava").textContent=initials;
+    document.getElementById("sidebar-name").textContent=user.name||user.email;
+    document.getElementById("topbar-ava").textContent=initials;
+    document.getElementById("topbar-name").textContent=user.name||user.email;
+
+    applyRoleUI();
+    showApp();
+    await init();
+    toast(`Тавтай морилно уу, ${user.name||user.email}! 👋`,"success");
+
+    
+    if (isAdmin()) {
+      navigate("dashboard");
+    } else {
+      navigate("my-attendance");
+    }
+  } catch(err) {
+    setLoading(false);
+    const msgs = {
+      "auth/user-not-found":"Бүртгэлтэй имэйл олдсонгүй.",
+      "auth/wrong-password":"Имэйл эсвэл нууц үг буруу байна.",
+      "auth/invalid-credential":"Имэйл эсвэл нууц үг буруу байна.",
+      "auth/too-many-requests":"Хэт олон оролдлого. Хэсэг хүлээнэ үү.",
+      "auth/invalid-email":"Имэйл хаяг буруу форматтай байна.",
+    };
+    errEl.textContent=msgs[err.code]||err.message||"Нэвтрэхэд алдаа гарлаа.";
+    errEl.style.display="block";
+  }
+};
+
+window.handleSignUp = async function(e) {
+  e.preventDefault();
+  const email=document.getElementById("email-input").value.trim();
+  const pass=document.getElementById("pass-input").value;
+  const name=prompt("Нэрээ оруулна уу:"); if(!name) return;
+  const errEl=document.getElementById("login-error");
+  errEl.textContent=""; errEl.style.display="none";
+  setLoading(true);
+  try {
+    const user=await signUpWithEmail(email,pass,name);
+    window._iet.user=user; window._iet.demo=false;
+    setLoading(false);
+    const initials=name.slice(0,2).toUpperCase();
+    document.getElementById("sidebar-ava").textContent=initials;
+    document.getElementById("sidebar-name").textContent=name;
+    document.getElementById("topbar-ava").textContent=initials;
+    document.getElementById("topbar-name").textContent=name;
+    applyRoleUI();
+    showApp(); await init();
+    toast(`Бүртгэгдлээ, ${name}!`,"success");
+    navigate("dashboard");
+  } catch(err) {
+    setLoading(false);
+    const msgs={"auth/email-already-in-use":"Энэ имэйл аль хэдийн бүртгэгдсэн.","auth/weak-password":"Нууц үг хүчгүй (6+ тэмдэгт).","auth/invalid-email":"Имэйл хаяг буруу."};
+    errEl.textContent=msgs[err.code]||err.message||"Бүртгүүлэхэд алдаа гарлаа.";
+    errEl.style.display="block";
+  }
+};
+
+window.handleForgotPw = async function(){
+  const email=document.getElementById("email-input").value.trim();
+  if(!email){ toast("Эхлээд имэйл оруулна уу","error"); return; }
+  try { await sendPasswordResetEmail(auth,email); toast("Нууц үг сэргээх линк имэйлдээ ирлээ","success"); }
+  catch(e){ toast("Алдаа: "+e.message,"error"); }
+};
+
+
+async function init() {
+  const loader=document.getElementById("app-loader");
+  if(loader) loader.style.display="flex";
+
+  if (window._iet.demo) {
+    await loadTeachers();
+    await loadTodayAttendance();
+  } else {
+    startRealtimeListeners();
+  }
+
+  if(loader) loader.style.display="none";
+}
+
+window.addEventListener("load", ()=>{
+ 
+  showLogin();
+  
+  onAuthStateChanged(auth, async(firebaseUser)=>{
+    if (firebaseUser && !window._iet.user) {
+      const prof=await getDoc(doc(db,"users",firebaseUser.uid));
+      const data=prof.exists()?prof.data():{};
+      const user={uid:firebaseUser.uid, email:firebaseUser.email, role:"admin", ...data};
+      window._iet.user=user; window._iet.demo=false;
+      const initials=(user.name||user.email||"?").slice(0,2).toUpperCase();
+      document.getElementById("sidebar-ava").textContent=initials;
+      document.getElementById("sidebar-name").textContent=user.name||user.email;
+      document.getElementById("topbar-ava").textContent=initials;
+      document.getElementById("topbar-name").textContent=user.name||user.email;
+      applyRoleUI(); showApp(); await init(); navigate("dashboard");
+    }
+  });
+});
+</script>
+
 <style>
-  :root {
-    --primary: #2563EB;
-    --primary-light: #3B82F6;
-    --primary-dark: #1D4ED8;
-    --primary-glow: rgba(37,99,235,0.18);
-    --purple: #7C3AED;
-    --gradient: linear-gradient(135deg, #2563EB 0%, #7C3AED 100%);
-    --gradient-soft: linear-gradient(135deg, rgba(37,99,235,0.08) 0%, rgba(124,58,237,0.08) 100%);
-    --success: #10B981;
-    --success-bg: rgba(16,185,129,0.1);
-    --error: #EF4444;
-    --error-bg: rgba(239,68,68,0.1);
-    --warning: #F59E0B;
-    --warning-bg: rgba(245,158,11,0.1);
-    --bg: #F1F5F9;
-    --surface: #FFFFFF;
-    --surface2: #F8FAFC;
-    --border: rgba(148,163,184,0.2);
-    --border-strong: rgba(148,163,184,0.4);
-    --text: #0F172A;
-    --text-2: #475569;
-    --text-3: #94A3B8;
-    --sidebar-w: 240px;
-    --navbar-h: 64px;
-    --radius: 16px;
-    --radius-sm: 10px;
-    --shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.06);
-    --shadow-lg: 0 8px 32px rgba(0,0,0,0.1);
-    --shadow-glow: 0 4px 24px rgba(37,99,235,0.2);
-    --glass: rgba(255,255,255,0.7);
-    --glass-border: rgba(255,255,255,0.9);
-    --transition: 0.2s cubic-bezier(0.4,0,0.2,1);
-  }
-  [data-theme="dark"] {
-    --bg: #080C14;
-    --surface: #0F1623;
-    --surface2: #141C2E;
-    --border: rgba(255,255,255,0.06);
-    --border-strong: rgba(255,255,255,0.12);
-    --text: #F1F5F9;
-    --text-2: #94A3B8;
-    --text-3: #475569;
-    --glass: rgba(15,22,35,0.8);
-    --glass-border: rgba(255,255,255,0.08);
-    --shadow: 0 1px 3px rgba(0,0,0,0.2), 0 4px 16px rgba(0,0,0,0.3);
-    --gradient-soft: linear-gradient(135deg, rgba(37,99,235,0.12) 0%, rgba(124,58,237,0.12) 100%);
-  }
-  * { margin:0; padding:0; box-sizing:border-box; }
-  html { scroll-behavior: smooth; }
-  body {
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    min-height: 100vh;
-    overflow-x: hidden;
-    transition: background var(--transition), color var(--transition);
-  }
-
-  
-  .sidebar {
-    position: fixed; left:0; top:0; bottom:0;
-    width: var(--sidebar-w);
-    background: var(--surface);
-    border-right: 1px solid var(--border);
-    display: flex; flex-direction: column;
-    z-index: 100;
-    transition: transform var(--transition), background var(--transition);
-    backdrop-filter: blur(20px);
-  }
-  .sidebar-logo {
-    height: var(--navbar-h);
-    display: flex; align-items: center; gap: 10px;
-    padding: 0 20px;
-    border-bottom: 1px solid var(--border);
-    flex-shrink: 0;
-  }
-  .logo-img {
-    width: 40px;
-    height: 40px;
-    object-fit: contain;
-  }
-  .logo-icon svg { width:18px; height:18px; fill:white; }
-  .logo-text { font-size: 17px; font-weight: 800; letter-spacing: -0.5px; }
-  .logo-text span { background: var(--gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-
-  .sidebar-nav { flex:1; padding: 16px 12px; overflow-y: auto; }
-  .nav-section { margin-bottom: 8px; }
-  .nav-label {
-    font-size: 10px; font-weight: 700; letter-spacing: 1.2px;
-    color: var(--text-3); text-transform: uppercase;
-    padding: 8px 10px 4px;
-  }
-  .nav-item {
-    display: flex; align-items: center; gap: 10px;
-    padding: 10px 12px; border-radius: var(--radius-sm);
-    cursor: pointer; color: var(--text-2);
-    font-size: 13.5px; font-weight: 500;
-    transition: all var(--transition);
-    position: relative; overflow: hidden;
-    text-decoration: none;
-    margin-bottom: 2px;
-  }
-  .nav-item:hover { background: var(--surface2); color: var(--text); }
-  .nav-item.active {
-    background: var(--gradient-soft);
-    color: var(--primary);
-    font-weight: 600;
-  }
-  .nav-item.active::before {
-    content:''; position:absolute; left:0; top:20%; bottom:20%;
-    width:3px; background:var(--gradient); border-radius:0 3px 3px 0;
-  }
-  .nav-icon { width:18px; height:18px; flex-shrink:0; opacity:0.85; }
-  .nav-badge {
-    margin-left: auto; background: var(--error); color: white;
-    font-size: 10px; font-weight: 700; padding: 2px 6px;
-    border-radius: 20px; line-height:1.4;
-  }
-  .sidebar-footer { padding: 12px; border-top: 1px solid var(--border); flex-shrink: 0; }
-  .sidebar-user {
-    display: flex; align-items: center; gap: 10px;
-    padding: 10px; border-radius: var(--radius-sm);
-    cursor: pointer; transition: background var(--transition);
-  }
-  .sidebar-user:hover { background: var(--surface2); }
-  .user-avatar {
-    width: 34px; height: 34px; border-radius: 50%;
-    background: var(--gradient);
-    display: flex; align-items: center; justify-content: center;
-    color: white; font-size: 13px; font-weight: 700; flex-shrink:0;
-  }
-  .user-info { flex:1; overflow:hidden; }
-  .user-name { font-size: 13px; font-weight: 600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .user-role { font-size: 11px; color: var(--text-3); }
-
-  /* ── TOPBAR ── */
-  .topbar {
-    position: fixed; left: var(--sidebar-w); right: 0; top: 0;
-    height: var(--navbar-h);
-    background: var(--glass);
-    border-bottom: 1px solid var(--glass-border);
-    backdrop-filter: blur(20px);
-    display: flex; align-items: center; gap: 16px;
-    padding: 0 24px; z-index: 90;
-    transition: left var(--transition);
-  }
-  .topbar-title {
-    font-size: 17px; font-weight: 700; letter-spacing: -0.3px;
-    white-space: nowrap;
-  }
-  .topbar-search {
-    flex:1; max-width: 360px; position:relative;
-  }
-  .search-input {
-    width:100%; height:38px; border-radius: 40px;
-    background: var(--surface2); border: 1px solid var(--border);
-    padding: 0 16px 0 38px; font-size: 13px; color: var(--text);
-    font-family: inherit; outline:none;
-    transition: all var(--transition);
-  }
-  .search-input::placeholder { color: var(--text-3); }
-  .search-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-glow); background: var(--surface); }
-  .search-icon { position:absolute; left:12px; top:50%; transform:translateY(-50%); width:15px; height:15px; color:var(--text-3); }
-  .topbar-actions { display:flex; align-items:center; gap:8px; margin-left:auto; }
-  .icon-btn {
-    width:38px; height:38px; border-radius:50%; border:1px solid var(--border);
-    background:var(--surface); cursor:pointer; display:flex; align-items:center; justify-content:center;
-    color: var(--text-2); transition: all var(--transition); position:relative;
-  }
-  .icon-btn:hover { background:var(--surface2); color:var(--text); border-color:var(--border-strong); }
-  .icon-btn svg { width:16px; height:16px; }
-  .notif-dot {
-    position:absolute; top:7px; right:7px; width:7px; height:7px;
-    background:var(--error); border-radius:50%; border:2px solid var(--surface);
-  }
-  .topbar-profile {
-    display:flex; align-items:center; gap:8px; cursor:pointer;
-    padding: 4px 12px 4px 4px; border-radius:40px;
-    border:1px solid var(--border); background:var(--surface);
-    transition:all var(--transition);
-  }
-  .topbar-profile:hover { border-color:var(--border-strong); background:var(--surface2); }
-  .tp-avatar { width:30px; height:30px; border-radius:50%; background:var(--gradient); display:flex; align-items:center; justify-content:center; color:white; font-size:12px; font-weight:700; }
-  .tp-name { font-size:13px; font-weight:600; }
-  .tp-chevron { width:14px; height:14px; color:var(--text-3); }
-
-  /* ── MAIN ── */
-  .main {
-    margin-left: var(--sidebar-w);
-    padding-top: var(--navbar-h);
-    min-height: 100vh;
-    transition: margin var(--transition);
-  }
-  .page { display:none; padding: 28px 28px; animation: fadeIn 0.3s ease; }
-  .page.active { display:block; }
-  @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
-
-  /* ── KPI CARDS ── */
-  .kpi-grid { display:grid; grid-template-columns: repeat(4,1fr); gap:16px; margin-bottom:24px; }
-  .kpi-card {
-    background:var(--surface); border:1px solid var(--border);
-    border-radius: var(--radius); padding: 20px;
-    box-shadow: var(--shadow); position:relative; overflow:hidden;
-    transition: transform var(--transition), box-shadow var(--transition);
-    cursor: default;
-  }
-  .kpi-card:hover { transform:translateY(-2px); box-shadow: var(--shadow-lg); }
-  .kpi-card::before {
-    content:''; position:absolute; top:-30px; right:-30px;
-    width:90px; height:90px; border-radius:50%;
-    opacity:0.07;
-  }
-  .kpi-card.blue::before { background:var(--primary); }
-  .kpi-card.green::before { background:var(--success); }
-  .kpi-card.red::before { background:var(--error); }
-  .kpi-card.yellow::before { background:var(--warning); }
-  .kpi-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
-  .kpi-icon {
-    width:42px; height:42px; border-radius:12px;
-    display:flex; align-items:center; justify-content:center;
-  }
-  .kpi-icon svg { width:20px; height:20px; }
-  .kpi-card.blue .kpi-icon { background:rgba(37,99,235,0.1); color:var(--primary); }
-  .kpi-card.green .kpi-icon { background:var(--success-bg); color:var(--success); }
-  .kpi-card.red .kpi-icon { background:var(--error-bg); color:var(--error); }
-  .kpi-card.yellow .kpi-icon { background:var(--warning-bg); color:var(--warning); }
-  .kpi-badge { font-size:11px; font-weight:600; padding:3px 8px; border-radius:20px; }
-  .badge-up { background:var(--success-bg); color:var(--success); }
-  .badge-down { background:var(--error-bg); color:var(--error); }
-  .kpi-value { font-size:32px; font-weight:800; letter-spacing:-1.5px; line-height:1; margin-bottom:4px; }
-  .kpi-label { font-size:13px; color:var(--text-2); font-weight:500; }
-  .kpi-sub { font-size:11.5px; color:var(--text-3); margin-top:6px; }
-
-  .charts-row { display:grid; grid-template-columns:1.6fr 1fr; gap:16px; margin-bottom:24px; }
-  .chart-card {
-    background:var(--surface); border:1px solid var(--border);
-    border-radius:var(--radius); padding:20px; box-shadow:var(--shadow);
-  }
-  .card-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; }
-  .card-title { font-size:15px; font-weight:700; }
-  .card-sub { font-size:12px; color:var(--text-3); margin-top:2px; }
-  .chip {
-    font-size:11px; font-weight:600; padding:4px 10px; border-radius:20px;
-    background:var(--surface2); border:1px solid var(--border); color:var(--text-2); cursor:pointer;
-    transition:all var(--transition);
-  }
-  .chip.active, .chip:hover { background:var(--primary); color:white; border-color:var(--primary); }
-
-  .bar-chart { height:180px; display:flex; align-items:flex-end; gap:8px; padding-top:10px; }
-  .bar-group { flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; }
-  .bar-wrap { width:100%; display:flex; gap:3px; align-items:flex-end; height:150px; }
-  .bar {
-    flex:1; border-radius:4px 4px 0 0;
-    transition: height 1s cubic-bezier(0.34,1.56,0.64,1);
-    position:relative; cursor:pointer;
-  }
-  .bar:hover::after {
-    content: attr(data-val);
-    position:absolute; top:-22px; left:50%; transform:translateX(-50%);
-    background:var(--text); color:var(--surface); font-size:10px; font-weight:600;
-    padding:2px 6px; border-radius:4px; white-space:nowrap;
-  }
-  .bar.present { background:var(--primary); }
-  .bar.absent { background:var(--error); opacity:0.7; }
-  .bar.late { background:var(--warning); opacity:0.8; }
-  .bar-label { font-size:10px; color:var(--text-3); font-weight:500; }
-  .legend { display:flex; gap:14px; margin-top:12px; }
-  .legend-item { display:flex; align-items:center; gap:5px; font-size:11.5px; color:var(--text-2); }
-  .legend-dot { width:8px; height:8px; border-radius:50%; }
-
-  .donut-wrap { position:relative; width:150px; height:150px; margin:0 auto 16px; }
-  .donut-svg { width:100%; height:100%; transform:rotate(-90deg); }
-  .donut-center {
-    position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
-    text-align:center; pointer-events:none;
-  }
-  .donut-pct { font-size:24px; font-weight:800; letter-spacing:-1px; }
-  .donut-lbl { font-size:11px; color:var(--text-3); font-weight:500; }
-  .donut-stats { display:flex; justify-content:space-around; }
-  .donut-stat { text-align:center; }
-  .donut-stat-val { font-size:16px; font-weight:700; }
-  .donut-stat-lbl { font-size:11px; color:var(--text-3); }
-
-  .bottom-row { display:grid; grid-template-columns:1.4fr 1fr; gap:16px; }
-  .activity-card {
-    background:var(--surface); border:1px solid var(--border);
-    border-radius:var(--radius); padding:20px; box-shadow:var(--shadow);
-  }
-  .activity-list { display:flex; flex-direction:column; gap:12px; margin-top:4px; }
-  .activity-item { display:flex; align-items:center; gap:12px; }
-  .act-avatar {
-    width:36px; height:36px; border-radius:50%; flex-shrink:0;
-    display:flex; align-items:center; justify-content:center;
-    font-size:13px; font-weight:700; color:white;
-  }
-  .act-info { flex:1; }
-  .act-name { font-size:13px; font-weight:600; }
-  .act-desc { font-size:12px; color:var(--text-3); margin-top:1px; }
-  .act-status { font-size:11.5px; font-weight:600; padding:3px 10px; border-radius:20px; }
-  .act-time { font-size:11px; color:var(--text-3); white-space:nowrap; }
-
-  .performer-list { display:flex; flex-direction:column; gap:10px; margin-top:4px; }
-  .performer-item { display:flex; align-items:center; gap:10px; }
-  .perf-rank { width:22px; font-size:12px; font-weight:800; color:var(--text-3); text-align:center; }
-  .perf-rank.gold { color:#F59E0B; }
-  .perf-rank.silver { color:#94A3B8; }
-  .perf-rank.bronze { color:#CD7C3A; }
-  .perf-avatar { width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; color:white; flex-shrink:0; }
-  .perf-info { flex:1; }
-  .perf-name { font-size:13px; font-weight:600; }
-  .perf-sub { font-size:11px; color:var(--text-3); }
-  .perf-bar-wrap { width:80px; }
-  .perf-bar-track { height:5px; background:var(--surface2); border-radius:10px; overflow:hidden; }
-  .perf-bar-fill { height:100%; border-radius:10px; background:var(--gradient); transition:width 1s ease; }
-  .perf-pct { font-size:12px; font-weight:700; color:var(--primary); text-align:right; }
-
-  .page-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:24px; flex-wrap:wrap; gap:12px; }
-  .page-title { font-size:22px; font-weight:800; letter-spacing:-0.5px; }
-  .page-desc { font-size:13px; color:var(--text-3); margin-top:2px; }
-  .btn {
-    display:inline-flex; align-items:center; gap:7px;
-    padding: 9px 18px; border-radius:10px; border:none; cursor:pointer;
-    font-family:inherit; font-size:13px; font-weight:600;
-    transition:all var(--transition);
-  }
-  .btn-primary { background:var(--gradient); color:white; box-shadow:var(--shadow-glow); }
-  .btn-primary:hover { opacity:0.9; transform:translateY(-1px); box-shadow: 0 6px 20px rgba(37,99,235,0.35); }
-  .btn-outline { background:var(--surface); border:1px solid var(--border); color:var(--text-2); }
-  .btn-outline:hover { border-color:var(--primary); color:var(--primary); background:var(--surface); }
-  .btn svg { width:15px; height:15px; }
-
-  .filters-bar {
-    background:var(--surface); border:1px solid var(--border);
-    border-radius:var(--radius); padding:14px 18px;
-    display:flex; align-items:center; gap:12px; margin-bottom:16px; flex-wrap:wrap;
-    box-shadow:var(--shadow);
-  }
-  .filter-select {
-    height:36px; border-radius:8px; border:1px solid var(--border);
-    background:var(--surface2); color:var(--text); font-family:inherit;
-    font-size:13px; padding:0 12px; outline:none; cursor:pointer;
-    transition:border-color var(--transition);
-  }
-  .filter-select:focus { border-color:var(--primary); }
-  .filter-input {
-    height:36px; border-radius:8px; border:1px solid var(--border);
-    background:var(--surface2); color:var(--text); font-family:inherit;
-    font-size:13px; padding:0 12px; outline:none; flex:1; min-width:160px;
-    transition:border-color var(--transition);
-  }
-  .filter-input:focus { border-color:var(--primary); box-shadow:0 0 0 3px var(--primary-glow); }
-  .filter-input::placeholder { color:var(--text-3); }
-  .filter-sep { width:1px; height:24px; background:var(--border); flex-shrink:0; }
-
-  .table-card {
-    background:var(--surface); border:1px solid var(--border);
-    border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden;
-  }
-  .table-scroll { overflow-x:auto; }
-  table { width:100%; border-collapse:collapse; }
-  thead tr { border-bottom:1px solid var(--border); background:var(--surface2); }
-  th {
-    padding:12px 18px; text-align:left; font-size:11.5px;
-    font-weight:700; color:var(--text-3); letter-spacing:0.6px; text-transform:uppercase;
-    white-space:nowrap;
-  }
-  tbody tr {
-    border-bottom:1px solid var(--border); transition:background var(--transition);
-  }
-  tbody tr:last-child { border-bottom:none; }
-  tbody tr:hover { background:var(--surface2); }
-  td { padding:14px 18px; font-size:13.5px; }
-  .teacher-cell { display:flex; align-items:center; gap:10px; }
-  .t-avatar { width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; color:white; flex-shrink:0; }
-  .t-name { font-weight:600; }
-  .t-dept { font-size:11px; color:var(--text-3); }
-  .status-badge {
-    display:inline-flex; align-items:center; gap:5px;
-    padding:4px 10px; border-radius:20px; font-size:12px; font-weight:600;
-  }
-  .status-present { background:var(--success-bg); color:var(--success); }
-  .status-absent { background:var(--error-bg); color:var(--error); }
-  .status-late { background:var(--warning-bg); color:var(--warning); }
-  .status-dot { width:6px; height:6px; border-radius:50%; background:currentColor; }
-  .action-btns { display:flex; gap:6px; }
-  .act-btn {
-    width:30px; height:30px; border-radius:8px; border:1px solid var(--border);
-    background:var(--surface2); cursor:pointer; display:flex; align-items:center;
-    justify-content:center; transition:all var(--transition); font-size:14px;
-  }
-  .act-btn:hover { transform:scale(1.1); }
-  .act-btn.p:hover { background:var(--success-bg); border-color:var(--success); }
-  .act-btn.a:hover { background:var(--error-bg); border-color:var(--error); }
-  .act-btn.l:hover { background:var(--warning-bg); border-color:var(--warning); }
-  .table-footer {
-    display:flex; align-items:center; justify-content:space-between;
-    padding:14px 18px; border-top:1px solid var(--border);
-    font-size:12.5px; color:var(--text-3); flex-wrap:wrap; gap:8px;
-  }
-  .pagination { display:flex; gap:4px; }
-  .pg-btn {
-    width:30px; height:30px; border-radius:8px; border:1px solid var(--border);
-    background:var(--surface); cursor:pointer; font-size:13px; color:var(--text-2);
-    display:flex; align-items:center; justify-content:center; transition:all var(--transition);
-    font-family:inherit; font-weight:500;
-  }
-  .pg-btn:hover, .pg-btn.active { background:var(--primary); color:white; border-color:var(--primary); }
-
-  /* ── TEACHER PROFILE PAGE ── */
-  .profile-grid { display:grid; grid-template-columns:320px 1fr; gap:20px; }
-  .profile-card {
-    background:var(--surface); border:1px solid var(--border);
-    border-radius:var(--radius); padding:28px 24px; box-shadow:var(--shadow);
-    text-align:center;
-  }
-  .profile-banner {
-    height:80px; border-radius:12px; margin:-28px -24px 0; margin-bottom:0;
-    background:var(--gradient); position:relative; overflow:hidden;
-    margin-top:-28px; margin-left:-24px; margin-right:-24px;
-  }
-  .profile-banner-pattern {
-    position:absolute; inset:0;
-    background: repeating-linear-gradient(45deg, rgba(255,255,255,0.05) 0px, rgba(255,255,255,0.05) 1px, transparent 1px, transparent 8px);
-  }
-  .profile-avatar-wrap { position:relative; display:inline-block; margin-top:-30px; margin-bottom:14px; }
-  .profile-avatar {
-    width:72px; height:72px; border-radius:50%; background:var(--gradient);
-    display:flex; align-items:center; justify-content:center;
-    font-size:26px; font-weight:800; color:white;
-    border:4px solid var(--surface); box-shadow:var(--shadow-lg);
-  }
-  .profile-online { position:absolute; bottom:4px; right:4px; width:14px; height:14px; border-radius:50%; background:var(--success); border:3px solid var(--surface); }
-  .profile-name { font-size:18px; font-weight:800; margin-bottom:2px; }
-  .profile-role { font-size:13px; color:var(--text-2); margin-bottom:4px; }
-  .profile-dept { font-size:12px; color:var(--text-3); margin-bottom:20px; }
-  .profile-stats-row { display:flex; border-radius:12px; overflow:hidden; border:1px solid var(--border); margin-bottom:20px; }
-  .profile-stat { flex:1; padding:12px 8px; text-align:center; border-right:1px solid var(--border); }
-  .profile-stat:last-child { border-right:none; }
-  .profile-stat-val { font-size:18px; font-weight:800; }
-  .profile-stat-lbl { font-size:10px; color:var(--text-3); font-weight:600; text-transform:uppercase; letter-spacing:0.5px; }
-  .profile-info-list { text-align:left; display:flex; flex-direction:column; gap:12px; }
-  .profile-info-item { display:flex; align-items:center; gap:10px; }
-  .pii-icon { width:32px; height:32px; border-radius:8px; background:var(--surface2); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-  .pii-icon svg { width:15px; height:15px; color:var(--text-2); }
-  .pii-label { font-size:11px; color:var(--text-3); }
-  .pii-val { font-size:13px; font-weight:600; }
-
-  .calendar-card {
-    background:var(--surface); border:1px solid var(--border);
-    border-radius:var(--radius); padding:20px; box-shadow:var(--shadow);
-    margin-bottom:16px;
-  }
-  .cal-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
-  .cal-nav { display:flex; gap:4px; }
-  .cal-btn { width:28px; height:28px; border-radius:8px; border:1px solid var(--border); background:var(--surface2); cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all var(--transition); }
-  .cal-btn:hover { background:var(--primary); color:white; border-color:var(--primary); }
-  .cal-btn svg { width:13px; height:13px; }
-  .cal-month { font-size:15px; font-weight:700; }
-  .calendar-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:4px; }
-  .cal-day-header { text-align:center; font-size:10.5px; font-weight:700; color:var(--text-3); padding:4px 0; text-transform:uppercase; letter-spacing:0.5px; }
-  .cal-day {
-    aspect-ratio:1; border-radius:8px; display:flex; align-items:center;
-    justify-content:center; font-size:12px; font-weight:500; cursor:pointer;
-    transition:all var(--transition); position:relative;
-  }
-  .cal-day:hover { background:var(--surface2); }
-  .cal-day.today { background:var(--primary); color:white; font-weight:700; }
-  .cal-day.present { background:var(--success-bg); color:var(--success); font-weight:600; }
-  .cal-day.absent { background:var(--error-bg); color:var(--error); font-weight:600; }
-  .cal-day.late { background:var(--warning-bg); color:var(--warning); font-weight:600; }
-  .cal-day.empty { cursor:default; }
-  .cal-legend { display:flex; gap:12px; margin-top:12px; justify-content:center; }
-  .cal-legend-item { display:flex; align-items:center; gap:5px; font-size:11px; color:var(--text-2); }
-  .cal-legend-dot { width:8px; height:8px; border-radius:50%; }
-
-  /* ── REPORTS PAGE ── */
-  .reports-filters {
-    background:var(--surface); border:1px solid var(--border);
-    border-radius:var(--radius); padding:20px; box-shadow:var(--shadow); margin-bottom:20px;
-  }
-  .reports-filters-grid { display:grid; grid-template-columns:repeat(3,1fr) auto; gap:12px; align-items:end; }
-  .form-group label { font-size:12px; font-weight:600; color:var(--text-2); display:block; margin-bottom:6px; }
-  .form-input {
-    width:100%; height:38px; border-radius:8px; border:1px solid var(--border);
-    background:var(--surface2); color:var(--text); font-family:inherit; font-size:13px;
-    padding:0 12px; outline:none; transition:all var(--transition);
-  }
-  .form-input:focus { border-color:var(--primary); box-shadow:0 0 0 3px var(--primary-glow); }
-  .export-btns { display:flex; gap:8px; }
-  .btn-pdf { background:var(--error-bg); color:var(--error); border:1px solid rgba(239,68,68,0.2); }
-  .btn-pdf:hover { background:var(--error); color:white; }
-  .btn-excel { background:var(--success-bg); color:var(--success); border:1px solid rgba(16,185,129,0.2); }
-  .btn-excel:hover { background:var(--success); color:white; }
-
-  .reports-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+:root {
+  --ink:#0D1117;--ink2:#3D4A5C;--ink3:#8896A8;--ink4:#C4CDD8;
+  --paper:#F4F7FB;--surface:#FFFFFF;--surface2:#EEF2F8;
+  --border:rgba(0,0,0,0.07);--border2:rgba(0,0,0,0.12);
+  --accent:#1A56DB;--accent2:#5B21B6;--accent-glow:rgba(26,86,219,0.15);
+  --green:#059669;--green-bg:rgba(5,150,105,0.09);
+  --red:#DC2626;--red-bg:rgba(220,38,38,0.09);
+  --amber:#D97706;--amber-bg:rgba(217,119,6,0.09);
+  --qr-green:#00C896;--qr-green-bg:rgba(0,200,150,0.1);
+  --grad:linear-gradient(135deg,#1A56DB 0%,#5B21B6 100%);
+  --grad-soft:linear-gradient(135deg,rgba(26,86,219,0.07) 0%,rgba(91,33,182,0.07) 100%);
+  --sidebar-w:256px;--nav-h:60px;--r:14px;--r-sm:9px;
+  --shadow:0 2px 8px rgba(0,0,0,0.06),0 0 0 1px rgba(0,0,0,0.04);
+  --shadow-md:0 8px 24px rgba(0,0,0,0.09),0 0 0 1px rgba(0,0,0,0.04);
+  --shadow-glow:0 4px 20px rgba(26,86,219,0.22);
+  --t:0.18s cubic-bezier(0.4,0,0.2,1);
+  --font:'Plus Jakarta Sans',sans-serif;
+  --mono:'JetBrains Mono',monospace;
+}
+[data-theme="dark"] {
+  --ink:#EFF3F8;--ink2:#A0AABB;--ink3:#5A6678;--ink4:#2E3848;
+  --paper:#090E18;--surface:#101623;--surface2:#161E2E;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.12);
+  --shadow:0 2px 8px rgba(0,0,0,0.3),0 0 0 1px rgba(255,255,255,0.05);
+  --shadow-md:0 8px 24px rgba(0,0,0,0.4),0 0 0 1px rgba(255,255,255,0.05);
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{font-family:var(--font);background:var(--paper);color:var(--ink);min-height:100vh;overflow-x:hidden;transition:background var(--t),color var(--t);font-size:14px;}
 
 
-  .settings-grid { display:grid; grid-template-columns:240px 1fr; gap:20px; }
-  .settings-menu {
-    background:var(--surface); border:1px solid var(--border);
-    border-radius:var(--radius); padding:8px; box-shadow:var(--shadow); height:fit-content;
-  }
-  .settings-menu-item {
-    padding:10px 14px; border-radius:10px; cursor:pointer; font-size:13.5px; font-weight:500;
-    color:var(--text-2); transition:all var(--transition); display:flex; align-items:center; gap:10px;
-  }
-  .settings-menu-item:hover { background:var(--surface2); color:var(--text); }
-  .settings-menu-item.active { background:var(--gradient-soft); color:var(--primary); font-weight:600; }
-  .settings-panel {
-    background:var(--surface); border:1px solid var(--border);
-    border-radius:var(--radius); padding:28px; box-shadow:var(--shadow);
-  }
-  .settings-section-title { font-size:17px; font-weight:800; margin-bottom:4px; }
-  .settings-section-desc { font-size:13px; color:var(--text-3); margin-bottom:24px; }
-  .settings-row {
-    display:flex; align-items:center; justify-content:space-between;
-    padding:16px 0; border-bottom:1px solid var(--border); gap:20px;
-  }
-  .settings-row:last-child { border-bottom:none; }
-  .settings-row-info { flex:1; }
-  .settings-row-label { font-size:14px; font-weight:600; }
-  .settings-row-desc { font-size:12px; color:var(--text-3); margin-top:2px; }
-  .toggle {
-    width:44px; height:24px; background:var(--border-strong); border-radius:20px;
-    position:relative; cursor:pointer; transition:background var(--transition); flex-shrink:0;
-  }
-  .toggle.on { background:var(--primary); }
-  .toggle::after {
-    content:''; position:absolute; top:3px; left:3px;
-    width:18px; height:18px; border-radius:50%; background:white;
-    transition:transform var(--transition); box-shadow:0 1px 4px rgba(0,0,0,0.2);
-  }
-  .toggle.on::after { transform:translateX(20px); }
+#auth-screen{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:var(--paper);z-index:1000;background-image:radial-gradient(circle at 20% 20%,rgba(26,86,219,0.06),transparent 50%),radial-gradient(circle at 80% 80%,rgba(91,33,182,0.06),transparent 50%);}
+.login-box{width:100%;max-width:420px;padding:20px;}
+.login-card{background:var(--surface);border:1px solid var(--border2);border-radius:20px;padding:36px 32px;box-shadow:var(--shadow-md);}
+.login-logo{display:flex;align-items:center;gap:12px;margin-bottom:28px;justify-content:center;}
+.login-logo-mark{width:44px;height:44px;border-radius:13px;background:var(--grad);display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-glow);overflow:hidden;}
+.login-logo-mark img{width:44px;height:44px;object-fit:cover;}
+.login-logo-text{font-size:28px;letter-spacing:-0.5px;font-weight:800;}
+.login-logo-text em{font-style:italic;color:var(--accent);}
+.login-heading{font-size:22px;font-weight:800;letter-spacing:-0.3px;margin-bottom:4px;}
+.login-sub{font-size:13px;color:var(--ink3);margin-bottom:16px;}
+.demo-hint{background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:12px 14px;font-size:12.5px;margin-bottom:18px;line-height:1.8;}
+.demo-hint strong{color:var(--accent);}
+.demo-role{display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1px solid var(--border2);border-radius:6px;padding:2px 8px;font-size:11.5px;font-weight:600;margin:2px 0;}
+.form-group{margin-bottom:14px;}
+.form-label{font-size:11.5px;font-weight:700;color:var(--ink2);display:block;margin-bottom:5px;letter-spacing:0.3px;}
+.form-field{width:100%;height:42px;border-radius:10px;border:1.5px solid var(--border2);background:var(--surface2);color:var(--ink);font-family:var(--font);font-size:14px;padding:0 14px;outline:none;transition:all var(--t);}
+.form-field:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow);background:var(--surface);}
+.pass-wrap{position:relative;}
+.pass-toggle{position:absolute;right:12px;top:50%;transform:translateY(-50%);cursor:pointer;color:var(--ink3);font-size:16px;user-select:none;}
+.login-error{background:var(--red-bg);border:1px solid rgba(220,38,38,0.2);color:var(--red);padding:10px 14px;border-radius:9px;font-size:13px;margin-bottom:14px;display:none;}
+.login-btn{width:100%;height:44px;border-radius:10px;border:none;cursor:pointer;background:var(--grad);color:white;font-family:var(--font);font-size:14px;font-weight:700;letter-spacing:0.2px;box-shadow:var(--shadow-glow);transition:all var(--t);display:flex;align-items:center;justify-content:center;gap:8px;}
+.login-btn:hover{opacity:0.9;transform:translateY(-1px);}
+.login-btn:disabled{opacity:0.7;cursor:not-allowed;transform:none;}
+.login-footer{display:flex;align-items:center;justify-content:space-between;margin-top:16px;}
+.forgot-link{font-size:12.5px;color:var(--accent);cursor:pointer;}
+.forgot-link:hover{text-decoration:underline;}
+.spinner{width:16px;height:16px;border:2px solid rgba(255,255,255,0.3);border-top-color:white;border-radius:50%;animation:spin 0.7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
 
-  
-  .toast-container { position:fixed; bottom:24px; right:24px; display:flex; flex-direction:column; gap:8px; z-index:1000; pointer-events:none; }
-  .toast {
-    background:var(--surface); border:1px solid var(--border); border-radius:12px;
-    padding:12px 18px; box-shadow:var(--shadow-lg);
-    display:flex; align-items:center; gap:10px; pointer-events:auto;
-    animation: toastIn 0.4s cubic-bezier(0.34,1.56,0.64,1);
-    font-size:13.5px; font-weight:500; min-width:240px;
-  }
-  .toast.removing { animation: toastOut 0.3s ease forwards; }
-  @keyframes toastIn { from { opacity:0; transform:translateX(20px) scale(0.95); } to { opacity:1; transform:none; } }
-  @keyframes toastOut { to { opacity:0; transform:translateX(20px) scale(0.95); } }
-  .toast-icon { width:20px; height:20px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:11px; flex-shrink:0; }
-  .toast.success .toast-icon { background:var(--success-bg); }
-  .toast.error .toast-icon { background:var(--error-bg); }
-  .toast.info .toast-icon { background:rgba(37,99,235,0.1); }
+/* ── APP ── */
+#app-screen{display:none;flex-direction:row;min-height:100vh;}
+#app-loader{position:fixed;inset:0;background:var(--paper);z-index:500;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;}
+.loader-ring{width:36px;height:36px;border:3px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite;}
+.loader-text{font-size:13px;color:var(--ink3);}
 
-  /* ── MOBILE ── */
-  .mobile-menu-btn {
-    display:none; width:38px; height:38px; border-radius:10px; border:1px solid var(--border);
-    background:var(--surface); cursor:pointer; align-items:center; justify-content:center; color:var(--text-2);
-  }
-  .mobile-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:99; backdrop-filter:blur(4px); }
-  .count-badge {
-    background:var(--gradient-soft); border:1px solid var(--border);
-    color:var(--text-2); font-size:12px; font-weight:600; padding:3px 10px; border-radius:20px;
-  }
+/* ── SIDEBAR ── */
+.sidebar{position:fixed;left:0;top:0;bottom:0;width:var(--sidebar-w);background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;z-index:200;transition:transform var(--t);}
+.sidebar-logo{height:var(--nav-h);display:flex;align-items:center;gap:11px;padding:0 20px;border-bottom:1px solid var(--border);flex-shrink:0;}
+.logo-mark{width:36px;height:36px;border-radius:10px;background:var(--grad);display:flex;align-items:center;justify-content:center;overflow:hidden;}
+.logo-mark img{width:36px;height:36px;object-fit:cover;}
+.logo-wordmark{font-size:22px;font-weight:800;color:var(--ink);}
+.logo-wordmark em{font-style:italic;color:var(--accent);}
+.sidebar-body{flex:1;padding:14px 10px;overflow-y:auto;display:flex;flex-direction:column;gap:2px;}
+.nav-section-label{font-size:10px;font-weight:700;letter-spacing:1.4px;color:var(--ink3);text-transform:uppercase;padding:10px 12px 5px;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:var(--r-sm);cursor:pointer;color:var(--ink2);font-size:13.5px;font-weight:500;transition:all var(--t);position:relative;text-decoration:none;user-select:none;}
+.nav-item:hover{background:var(--surface2);color:var(--ink);}
+.nav-item.active{background:var(--grad-soft);color:var(--accent);font-weight:600;}
+.nav-item.active::before{content:'';position:absolute;left:0;top:20%;bottom:20%;width:3px;background:var(--grad);border-radius:0 3px 3px 0;}
+.nav-icon{width:17px;height:17px;flex-shrink:0;}
+.nav-badge{margin-left:auto;background:var(--red);color:white;font-size:10px;font-weight:700;padding:2px 6px;border-radius:20px;}
+/* QR nav badge special */
+.nav-qr-badge{margin-left:auto;background:var(--qr-green);color:#003d2e;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;}
+.sidebar-footer{padding:12px 10px;border-top:1px solid var(--border);flex-shrink:0;}
+.user-card{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--r-sm);cursor:pointer;transition:background var(--t);}
+.user-card:hover{background:var(--surface2);}
+.user-ava{width:34px;height:34px;border-radius:50%;background:var(--grad);display:flex;align-items:center;justify-content:center;color:white;font-size:12px;font-weight:700;flex-shrink:0;}
+.user-name{font-size:13px;font-weight:600;}
+.user-role{font-size:11px;}
+.role-badge{display:inline-block;font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;margin-top:2px;}
+.role-admin{background:rgba(26,86,219,0.1);color:var(--accent);}
+.role-teacher{background:var(--qr-green-bg);color:var(--qr-green);}
 
-  ::-webkit-scrollbar { width:5px; height:5px; }
-  ::-webkit-scrollbar-track { background:transparent; }
-  ::-webkit-scrollbar-thumb { background:var(--border-strong); border-radius:10px; }
+/* ── TOPBAR ── */
+.topbar{position:fixed;left:var(--sidebar-w);right:0;top:0;height:var(--nav-h);background:rgba(244,247,251,0.9);border-bottom:1px solid var(--border);backdrop-filter:blur(16px) saturate(180%);display:flex;align-items:center;gap:14px;padding:0 24px;z-index:100;transition:left var(--t);}
+[data-theme="dark"] .topbar{background:rgba(9,14,24,0.9);}
+.topbar-title{font-size:20px;font-weight:800;letter-spacing:-0.3px;white-space:nowrap;}
+.topbar-search{flex:1;max-width:340px;position:relative;}
+.search-icon{position:absolute;left:11px;top:50%;transform:translateY(-50%);width:14px;height:14px;color:var(--ink3);pointer-events:none;}
+.search-input{width:100%;height:36px;border-radius:40px;background:var(--surface2);border:1px solid var(--border2);padding:0 14px 0 34px;font-size:13px;color:var(--ink);font-family:var(--font);outline:none;transition:all var(--t);}
+.search-input::placeholder{color:var(--ink3);}
+.search-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow);}
+.topbar-right{display:flex;align-items:center;gap:8px;margin-left:auto;}
+.icon-btn{width:36px;height:36px;border-radius:10px;border:1px solid var(--border2);background:var(--surface);cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--ink2);transition:all var(--t);position:relative;}
+.icon-btn:hover{background:var(--surface2);color:var(--ink);}
+.icon-btn svg{width:15px;height:15px;}
+.topbar-user{display:flex;align-items:center;gap:7px;padding:4px 10px 4px 4px;border-radius:40px;border:1px solid var(--border2);background:var(--surface);cursor:pointer;transition:all var(--t);}
+.topbar-user:hover{background:var(--surface2);}
+.topbar-user-ava{width:28px;height:28px;border-radius:50%;background:var(--grad);display:flex;align-items:center;justify-content:center;color:white;font-size:11px;font-weight:700;}
+.topbar-user-name{font-size:13px;font-weight:600;}
 
-  @media (max-width:1100px) {
-    .kpi-grid { grid-template-columns:repeat(2,1fr); }
-    .charts-row { grid-template-columns:1fr; }
-    .bottom-row { grid-template-columns:1fr; }
-    .reports-grid { grid-template-columns:1fr; }
-    .profile-grid { grid-template-columns:1fr; }
-    .reports-filters-grid { grid-template-columns:1fr 1fr; }
-  }
-  @media (max-width:768px) {
-    :root { --sidebar-w:0px; }
-    .sidebar { transform:translateX(-240px); width:240px; }
-    .sidebar.open { transform:translateX(0); box-shadow:var(--shadow-lg); }
-    .topbar { left:0; padding:0 16px; }
-    .mobile-menu-btn { display:flex; }
-    .mobile-overlay.show { display:block; }
-    .main { margin-left:0; }
-    .page { padding:16px; }
-    .kpi-grid { grid-template-columns:1fr 1fr; }
-    .settings-grid { grid-template-columns:1fr; }
-    .topbar-title { display:none; }
-    .topbar-search { max-width:none; }
-    .filters-bar { flex-wrap:wrap; }
-    .reports-filters-grid { grid-template-columns:1fr; }
-  }
-  @media (max-width:480px) {
-    .kpi-grid { grid-template-columns:1fr; }
-  }
+/* ── MAIN ── */
+.main{margin-left:var(--sidebar-w);padding-top:var(--nav-h);min-height:100vh;}
+.page{display:none;padding:28px;animation:pageIn 0.25s ease both;}
+.page.active{display:block;}
+@keyframes pageIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+.page-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:14px;}
+.page-heading{font-size:28px;font-weight:800;letter-spacing:-0.5px;}
+.page-sub{font-size:13px;color:var(--ink3);margin-top:3px;}
+.header-actions{display:flex;gap:8px;align-items:center;}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:var(--r-sm);border:none;cursor:pointer;font-family:var(--font);font-size:13px;font-weight:600;transition:all var(--t);white-space:nowrap;}
+.btn-primary{background:var(--grad);color:white;box-shadow:var(--shadow-glow);}
+.btn-primary:hover{opacity:0.88;transform:translateY(-1px);}
+.btn-ghost{background:var(--surface);border:1px solid var(--border2);color:var(--ink2);}
+.btn-ghost:hover{color:var(--ink);background:var(--surface2);}
+.btn-qr{background:var(--qr-green-bg);border:1px solid rgba(0,200,150,0.25);color:var(--qr-green);font-weight:700;}
+.btn-qr:hover{background:var(--qr-green);color:white;}
+
+/* ── KPI ── */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px;}
+.kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:20px;box-shadow:var(--shadow);transition:transform var(--t),box-shadow var(--t);position:relative;overflow:hidden;}
+.kpi-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-md);}
+.kpi-accent{position:absolute;top:0;left:0;right:0;height:3px;border-radius:var(--r) var(--r) 0 0;}
+.kpi-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.kpi-icon{width:40px;height:40px;border-radius:11px;display:flex;align-items:center;justify-content:center;}
+.kpi-icon svg{width:18px;height:18px;}
+.kpi-icon.blue{background:rgba(26,86,219,0.1);color:var(--accent);}
+.kpi-icon.green{background:var(--green-bg);color:var(--green);}
+.kpi-icon.red{background:var(--red-bg);color:var(--red);}
+.kpi-icon.amber{background:var(--amber-bg);color:var(--amber);}
+.kpi-value{font-size:40px;font-weight:800;line-height:1;letter-spacing:-2px;margin-bottom:4px;font-variant-numeric:tabular-nums;}
+.kpi-label{font-size:13px;color:var(--ink2);font-weight:500;}
+.kpi-meta{font-size:11.5px;color:var(--ink3);margin-top:5px;}
+.charts-row{display:grid;grid-template-columns:1.55fr 1fr;gap:14px;margin-bottom:20px;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:20px;box-shadow:var(--shadow);}
+.card-head{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;}
+.card-title{font-size:15px;font-weight:700;}
+.card-sub{font-size:12px;color:var(--ink3);margin-top:2px;}
+.bar-chart-wrap{height:170px;display:flex;align-items:flex-end;gap:8px;}
+.bar-group{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;}
+.bars-inner{width:100%;display:flex;gap:2px;align-items:flex-end;height:140px;}
+.bar{flex:1;border-radius:4px 4px 0 0;cursor:pointer;position:relative;transition:height 0.9s cubic-bezier(0.34,1.56,0.64,1);}
+.bar::after{content:attr(data-tip);position:absolute;top:-26px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--surface);font-size:10px;font-weight:600;padding:3px 7px;border-radius:6px;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity 0.1s;}
+.bar:hover::after{opacity:1;}
+.bar.p{background:var(--accent);}
+.bar.a{background:var(--red);opacity:0.75;}
+.bar.l{background:var(--amber);opacity:0.85;}
+.bar-lbl{font-size:10.5px;color:var(--ink3);font-weight:500;}
+.chart-legend{display:flex;gap:16px;margin-top:14px;}
+.legend-item{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--ink2);}
+.legend-dot{width:7px;height:7px;border-radius:50%;}
+.donut-wrap{position:relative;width:140px;height:140px;margin:4px auto 16px;}
+.donut-svg{width:100%;height:100%;transform:rotate(-90deg);}
+.donut-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;}
+.donut-num{font-size:30px;font-weight:800;line-height:1;letter-spacing:-1px;}
+.donut-lbl{font-size:11px;color:var(--ink3);font-weight:500;margin-top:2px;}
+.donut-stats{display:flex;justify-content:space-around;padding:14px 0 0;border-top:1px solid var(--border);}
+.donut-stat-val{font-size:17px;font-weight:700;}
+.donut-stat-lbl{font-size:10.5px;color:var(--ink3);}
+.bottom-row{display:grid;grid-template-columns:1.4fr 1fr;gap:14px;}
+.act-item{display:flex;align-items:center;gap:11px;padding:10px;border-radius:var(--r-sm);transition:background var(--t);}
+.act-item:hover{background:var(--surface2);}
+.act-ava{width:36px;height:36px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:white;}
+.act-name{font-size:13.5px;font-weight:600;}
+.act-dept{font-size:11.5px;color:var(--ink3);margin-top:1px;}
+.act-badge{font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:20px;}
+.badge-p{background:var(--green-bg);color:var(--green);}
+.badge-a{background:var(--red-bg);color:var(--red);}
+.badge-l{background:var(--amber-bg);color:var(--amber);}
+.act-time{font-size:11px;color:var(--ink3);font-family:var(--mono);white-space:nowrap;}
+.count-pill{font-size:11.5px;font-weight:600;padding:3px 10px;border-radius:20px;background:var(--surface2);border:1px solid var(--border);color:var(--ink3);}
+.perf-list{display:flex;flex-direction:column;gap:8px;}
+.perf-item{display:flex;align-items:center;gap:9px;padding:9px;border-radius:var(--r-sm);transition:background var(--t);}
+.perf-item:hover{background:var(--surface2);}
+.perf-rank{width:22px;text-align:center;font-size:14px;flex-shrink:0;}
+.perf-ava{width:32px;height:32px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:white;}
+.perf-name{font-size:13px;font-weight:600;}
+.perf-sub{font-size:11px;color:var(--ink3);}
+.perf-bar-track{height:4px;background:var(--surface2);border-radius:10px;overflow:hidden;margin-top:4px;}
+.perf-bar-fill{height:100%;border-radius:10px;background:var(--grad);}
+.perf-pct{font-size:12px;font-weight:700;color:var(--accent);white-space:nowrap;}
+
+/* ── TABLE ── */
+.filter-bar{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px 18px;display:flex;align-items:center;gap:10px;margin-bottom:14px;box-shadow:var(--shadow);flex-wrap:wrap;}
+.filter-select,.filter-input{height:34px;border-radius:8px;border:1px solid var(--border2);background:var(--surface2);color:var(--ink);font-family:var(--font);font-size:13px;padding:0 11px;outline:none;transition:border-color var(--t);}
+.filter-input{flex:1;min-width:160px;}
+.filter-input::placeholder{color:var(--ink3);}
+.filter-input:focus,.filter-select:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow);}
+.filter-sep{width:1px;height:22px;background:var(--border2);}
+.table-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden;}
+.table-scroll{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;}
+thead tr{border-bottom:1px solid var(--border);background:var(--surface2);}
+th{padding:11px 16px;text-align:left;font-size:11px;font-weight:700;color:var(--ink3);letter-spacing:0.8px;text-transform:uppercase;white-space:nowrap;}
+tbody tr{border-bottom:1px solid var(--border);transition:background var(--t);}
+tbody tr:last-child{border-bottom:none;}
+tbody tr:hover{background:var(--surface2);}
+td{padding:12px 16px;font-size:13.5px;}
+.teacher-cell{display:flex;align-items:center;gap:10px;}
+.t-ava{width:34px;height:34px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:white;}
+.t-name{font-weight:600;}
+.t-dept{font-size:11px;color:var(--ink3);}
+.status-pill{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;}
+.sp-p{background:var(--green-bg);color:var(--green);}
+.sp-a{background:var(--red-bg);color:var(--red);}
+.sp-l{background:var(--amber-bg);color:var(--amber);}
+.sp-dot{width:5px;height:5px;border-radius:50%;background:currentColor;}
+.method-qr{font-size:10.5px;background:var(--qr-green-bg);color:var(--qr-green);padding:2px 6px;border-radius:20px;font-weight:600;margin-left:4px;}
+.method-manual{font-size:12px;color:var(--ink3);margin-left:4px;}
+.action-group{display:flex;gap:5px;}
+.act-btn{width:28px;height:28px;border-radius:7px;border:1px solid var(--border2);background:var(--surface2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;transition:all var(--t);}
+.act-btn:hover{transform:scale(1.1);}
+.act-btn.p:hover{background:var(--green-bg);border-color:var(--green);}
+.act-btn.a:hover{background:var(--red-bg);border-color:var(--red);}
+.act-btn.l:hover{background:var(--amber-bg);border-color:var(--amber);}
+.act-btn.q:hover{background:var(--qr-green-bg);border-color:var(--qr-green);}
+.table-footer{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-top:1px solid var(--border);flex-wrap:wrap;gap:8px;}
+.pagination{display:flex;gap:3px;}
+.pg-btn{width:30px;height:30px;border-radius:8px;border:1px solid var(--border2);background:var(--surface);cursor:pointer;font-size:12.5px;color:var(--ink2);display:flex;align-items:center;justify-content:center;transition:all var(--t);font-weight:600;}
+.pg-btn:hover,.pg-btn.active{background:var(--accent);color:white;border-color:var(--accent);}
+
+/* ── TEACHER CARDS ── */
+.teachers-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;}
+.teacher-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow);transition:transform var(--t),box-shadow var(--t);}
+.teacher-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-md);}
+.tc-header{height:64px;display:flex;align-items:flex-end;padding:0 16px 8px;}
+.tc-ava{width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,0.25);border:3px solid rgba(255,255,255,0.6);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:white;}
+.tc-body{padding:14px 16px 16px;}
+.tc-name{font-size:15px;font-weight:700;margin-bottom:2px;}
+.tc-dept{font-size:12px;color:var(--ink3);margin-bottom:10px;}
+.tc-meta{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;}
+.tc-meta span{font-size:11px;background:var(--surface2);border:1px solid var(--border);padding:3px 8px;border-radius:20px;color:var(--ink2);}
+.tc-actions{display:flex;gap:6px;}
+
+/* ── QR SCAN PAGE ── */
+.qr-scan-layout{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start;}
+.qr-camera-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:24px;box-shadow:var(--shadow);}
+.qr-camera-title{font-size:18px;font-weight:700;margin-bottom:4px;}
+.qr-camera-sub{font-size:13px;color:var(--ink3);margin-bottom:18px;}
+.qr-video-wrap{position:relative;border-radius:12px;overflow:hidden;background:#000;aspect-ratio:4/3;}
+.qr-video-wrap video{width:100%;height:100%;object-fit:cover;display:block;}
+.qr-scan-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;}
+.qr-scan-frame{width:180px;height:180px;position:relative;}
+.qr-scan-frame::before,.qr-scan-frame::after{content:'';position:absolute;width:36px;height:36px;border-color:var(--qr-green);border-style:solid;}
+.qr-scan-frame::before{top:0;left:0;border-width:3px 0 0 3px;border-radius:4px 0 0 0;}
+.qr-scan-frame::after{top:0;right:0;border-width:3px 3px 0 0;border-radius:0 4px 0 0;}
+.qr-scan-frame-b{position:absolute;bottom:0;left:0;right:0;height:36px;}
+.qr-scan-frame-bl::before,.qr-scan-frame-bl::after{content:'';position:absolute;width:36px;height:36px;border-color:var(--qr-green);border-style:solid;}
+.qr-scan-frame-bl::before{bottom:0;left:0;border-width:0 0 3px 3px;border-radius:0 0 0 4px;}
+.qr-scan-frame-bl::after{bottom:0;right:0;border-width:0 3px 3px 0;border-radius:0 0 4px 0;}
+.qr-scan-line{position:absolute;width:calc(100% - 40px);height:2px;background:linear-gradient(90deg,transparent,var(--qr-green),transparent);left:20px;top:50%;animation:qrScanLine 2s ease-in-out infinite;}
+@keyframes qrScanLine{0%{top:20px;opacity:0;}20%{opacity:1;}80%{opacity:1;}100%{top:calc(100% - 20px);opacity:0;}}
+.qr-canvas{display:none;}
+.qr-status-bar{margin-top:14px;padding:10px 14px;background:var(--surface2);border-radius:10px;font-size:13px;color:var(--ink2);text-align:center;border:1px solid var(--border);}
+.qr-controls{display:flex;gap:8px;margin-top:14px;}
+.qr-feedback-card{margin-top:14px;padding:16px;border-radius:12px;text-align:center;border:1.5px solid transparent;opacity:0;transform:translateY(8px) scale(0.97);transition:all 0.35s cubic-bezier(0.34,1.56,0.64,1);}
+.qr-feedback-card.show{opacity:1;transform:none;}
+.qr-fb-success{background:var(--green-bg);border-color:rgba(5,150,105,0.25);}
+.qr-fb-late{background:var(--amber-bg);border-color:rgba(217,119,6,0.25);}
+.qr-fb-info{background:var(--surface2);border-color:var(--border2);}
+.qr-fb-icon{font-size:28px;margin-bottom:6px;}
+.qr-fb-ava{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:white;margin:0 auto 8px;}
+.qr-fb-name{font-size:15px;font-weight:700;}
+.qr-fb-dept{font-size:12px;color:var(--ink3);}
+.qr-fb-status{font-size:13px;font-weight:600;margin-top:6px;}
+.qr-manual-fallback{margin-top:14px;padding:14px;background:var(--amber-bg);border:1px solid rgba(217,119,6,0.2);border-radius:10px;display:none;}
+.qr-manual-fallback p{font-size:12.5px;color:var(--amber);margin-bottom:8px;font-weight:600;}
+.qr-manual-row{display:flex;gap:6px;}
+.qr-manual-input{flex:1;height:36px;border-radius:8px;border:1px solid var(--border2);background:var(--surface);color:var(--ink);font-family:var(--mono);font-size:12px;padding:0 10px;outline:none;}
+.qr-log-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:20px;box-shadow:var(--shadow);}
+.qr-log-title{font-size:16px;font-weight:700;margin-bottom:4px;}
+.qr-log-sub{font-size:12.5px;color:var(--ink3);margin-bottom:16px;}
+.qr-log-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:var(--r-sm);transition:background var(--t);}
+.qr-log-item:hover{background:var(--surface2);}
+.qr-log-ava{width:34px;height:34px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:white;}
+.qr-log-name{font-size:13px;font-weight:600;}
+.qr-log-dept{font-size:11px;color:var(--ink3);}
+.qr-log-badge{font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;white-space:nowrap;}
+.qr-log-p{background:var(--green-bg);color:var(--green);}
+.qr-log-l{background:var(--amber-bg);color:var(--amber);}
+.qr-log-a{background:var(--red-bg);color:var(--red);}
+.qr-log-time{font-size:11px;color:var(--ink3);font-family:var(--mono);margin-left:auto;white-space:nowrap;}
+.qr-log-empty{font-size:13px;color:var(--ink3);text-align:center;padding:20px;}
+.qr-stat-row{display:flex;gap:10px;margin-bottom:16px;}
+.qr-stat{flex:1;padding:12px;background:var(--surface2);border-radius:10px;text-align:center;border:1px solid var(--border);}
+.qr-stat-val{font-size:22px;font-weight:800;letter-spacing:-1px;}
+.qr-stat-lbl{font-size:11px;color:var(--ink3);margin-top:2px;}
+
+/* ── MY ATTENDANCE (Teacher) ── */
+.my-profile-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:20px;box-shadow:var(--shadow);display:flex;align-items:center;gap:16px;margin-bottom:16px;}
+.my-ava{width:60px;height:60px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;color:white;flex-shrink:0;box-shadow:0 4px 14px rgba(0,0,0,0.15);}
+.my-name{font-size:18px;font-weight:800;letter-spacing:-0.3px;}
+.my-dept{font-size:13px;color:var(--ink2);margin-top:2px;}
+.my-join{font-size:12px;color:var(--ink3);margin-top:4px;}
+.my-today-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:20px;box-shadow:var(--shadow);margin-bottom:16px;}
+.my-today-label{font-size:12px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:12px;}
+.my-today-status{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.my-status-pill{font-size:14px;font-weight:700;padding:6px 14px;border-radius:20px;}
+.my-stat-p{background:var(--green-bg);color:var(--green);}
+.my-stat-a{background:var(--red-bg);color:var(--red);}
+.my-stat-l{background:var(--amber-bg);color:var(--amber);}
+.my-checkin-time{font-size:13px;color:var(--ink2);font-family:var(--mono);}
+.my-method-badge{font-size:12px;background:var(--qr-green-bg);color:var(--qr-green);padding:3px 10px;border-radius:20px;font-weight:600;}
+.my-week-card,.my-qr-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:20px;box-shadow:var(--shadow);margin-bottom:16px;}
+.my-section-title{font-size:14px;font-weight:700;margin-bottom:14px;}
+.my-week-grid{display:flex;gap:10px;flex-wrap:wrap;}
+.week-day{display:flex;flex-direction:column;align-items:center;gap:6px;}
+.week-dot{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;}
+.week-p{background:var(--green-bg);color:var(--green);}
+.week-l{background:var(--amber-bg);color:var(--amber);}
+.week-a{background:var(--red-bg);color:var(--red);}
+.week-label{font-size:11px;color:var(--ink3);font-weight:600;}
+.my-qr-desc{font-size:13px;color:var(--ink3);margin-bottom:14px;}
+.my-qr-display{margin-bottom:14px;display:inline-block;padding:12px;background:white;border-radius:12px;border:1px solid var(--border);}
+
+/* ── REPORTS ── */
+.rpt-filters{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:20px;box-shadow:var(--shadow);margin-bottom:18px;}
+.rpt-filters-grid{display:grid;grid-template-columns:repeat(3,1fr) auto;gap:12px;align-items:end;}
+.rpt-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.dept-bar-row{display:flex;align-items:center;gap:12px;margin-bottom:12px;}
+.dept-name{font-size:12px;font-weight:600;width:110px;color:var(--ink2);flex-shrink:0;}
+.dept-track{flex:1;height:7px;background:var(--surface2);border-radius:10px;overflow:hidden;}
+.dept-fill{height:100%;border-radius:10px;background:var(--grad);}
+.dept-pct{font-size:12px;font-weight:700;color:var(--accent);width:36px;text-align:right;}
+.rpt-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;border-top:1px solid var(--border);padding-top:14px;margin-top:14px;}
+.rpt-sum-val{font-size:22px;font-weight:800;}
+.rpt-sum-lbl{font-size:11px;color:var(--ink3);margin-top:1px;}
+
+/* ── SETTINGS ── */
+.settings-layout{display:grid;grid-template-columns:220px 1fr;gap:16px;}
+.settings-menu{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:8px;box-shadow:var(--shadow);height:fit-content;}
+.settings-mi{display:flex;align-items:center;gap:9px;padding:9px 12px;border-radius:var(--r-sm);cursor:pointer;font-size:13.5px;font-weight:500;color:var(--ink2);transition:all var(--t);}
+.settings-mi:hover{background:var(--surface2);color:var(--ink);}
+.settings-mi.active{background:var(--grad-soft);color:var(--accent);font-weight:600;}
+.settings-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:26px;box-shadow:var(--shadow);}
+.settings-title{font-size:22px;font-weight:800;margin-bottom:4px;}
+.settings-desc{font-size:13px;color:var(--ink3);margin-bottom:22px;}
+.settings-row{display:flex;align-items:center;justify-content:space-between;padding:16px 0;border-bottom:1px solid var(--border);gap:20px;}
+.settings-row:last-child{border-bottom:none;}
+.settings-row-lbl{font-size:14px;font-weight:600;}
+.settings-row-desc{font-size:12px;color:var(--ink3);margin-top:2px;}
+.toggle{width:42px;height:23px;background:var(--ink4);border-radius:20px;position:relative;cursor:pointer;transition:background var(--t);flex-shrink:0;}
+.toggle.on{background:var(--accent);}
+.toggle::after{content:'';position:absolute;top:3px;left:3px;width:17px;height:17px;border-radius:50%;background:white;transition:transform var(--t);box-shadow:0 1px 4px rgba(0,0,0,0.2);}
+.toggle.on::after{transform:translateX(19px);}
+
+/* ── MODALS ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);backdrop-filter:blur(4px);z-index:800;display:none;align-items:center;justify-content:center;}
+.modal-box{background:var(--surface);border:1px solid var(--border2);border-radius:18px;padding:28px;box-shadow:var(--shadow-md);width:100%;max-width:380px;animation:modalIn 0.25s cubic-bezier(0.34,1.56,0.64,1) both;}
+@keyframes modalIn{from{opacity:0;transform:scale(0.95) translateY(10px);}to{opacity:1;transform:none;}}
+.modal-title{font-size:20px;font-weight:800;margin-bottom:4px;}
+.modal-sub{font-size:13px;color:var(--ink3);margin-bottom:20px;}
+.modal-teacher-row{display:flex;align-items:center;gap:12px;padding:14px;background:var(--surface2);border-radius:12px;margin-bottom:18px;}
+.modal-ava{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:white;}
+.modal-teacher-name{font-size:15px;font-weight:700;}
+.modal-teacher-dept{font-size:12px;color:var(--ink3);}
+.modal-actions{display:flex;flex-direction:column;gap:8px;}
+.modal-btn{width:100%;height:42px;border-radius:10px;border:1px solid transparent;cursor:pointer;font-family:var(--font);font-size:13.5px;font-weight:600;transition:all var(--t);display:flex;align-items:center;justify-content:center;gap:8px;}
+.modal-btn-p{background:var(--green-bg);color:var(--green);border-color:rgba(5,150,105,0.25);}
+.modal-btn-p:hover{background:var(--green);color:white;}
+.modal-btn-a{background:var(--red-bg);color:var(--red);border-color:rgba(220,38,38,0.25);}
+.modal-btn-a:hover{background:var(--red);color:white;}
+.modal-btn-l{background:var(--amber-bg);color:var(--amber);border-color:rgba(217,119,6,0.25);}
+.modal-btn-l:hover{background:var(--amber);color:white;}
+.modal-cancel{background:none;border:1px solid var(--border2);color:var(--ink2);margin-top:4px;}
+.modal-cancel:hover{background:var(--surface2);color:var(--ink);}
+.qr-modal-box{max-width:320px;text-align:center;}
+.qr-code-display{margin:16px auto;display:inline-block;padding:14px;background:white;border-radius:14px;border:1px solid var(--border);box-shadow:var(--shadow);}
+.qr-code-display img,.qr-code-display canvas{display:block;}
+.qr-download-btn{width:100%;height:40px;border-radius:10px;border:1px solid var(--border2);background:var(--surface2);color:var(--ink2);font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;transition:all var(--t);margin-top:10px;}
+.qr-download-btn:hover{background:var(--qr-green);color:white;border-color:var(--qr-green);}
+.add-form .form-group{margin-bottom:12px;}
+.add-form label{font-size:12px;font-weight:700;color:var(--ink2);display:block;margin-bottom:5px;}
+.add-form input{width:100%;height:38px;border-radius:9px;border:1.5px solid var(--border2);background:var(--surface2);color:var(--ink);font-family:var(--font);font-size:13px;padding:0 12px;outline:none;transition:all var(--t);}
+.add-form input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow);}
+.modal-footer{display:flex;gap:8px;margin-top:20px;}
+.modal-footer .btn{flex:1;justify-content:center;}
+
+/* ── TOAST ── */
+.toasts{position:fixed;bottom:22px;right:22px;display:flex;flex-direction:column;gap:7px;z-index:1000;pointer-events:none;}
+.toast{background:var(--surface);border:1px solid var(--border2);border-radius:12px;padding:11px 16px;box-shadow:var(--shadow-md);display:flex;align-items:center;gap:10px;pointer-events:auto;animation:toastIn 0.32s cubic-bezier(0.34,1.56,0.64,1) both;font-size:13.5px;font-weight:500;min-width:230px;max-width:320px;}
+.toast.out{animation:toastOut 0.22s ease forwards;}
+@keyframes toastIn{from{opacity:0;transform:translateX(16px) scale(0.96);}to{opacity:1;transform:none;}}
+@keyframes toastOut{to{opacity:0;transform:translateX(16px) scale(0.96);}}
+.toast-icon{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;}
+.toast.success .toast-icon{background:var(--green-bg);color:var(--green);}
+.toast.error   .toast-icon{background:var(--red-bg);color:var(--red);}
+.toast.info    .toast-icon{background:rgba(26,86,219,0.1);color:var(--accent);}
+.toast button{margin-left:auto;background:none;border:none;cursor:pointer;color:var(--ink3);font-size:16px;}
+
+/* ── MOBILE ── */
+.mobile-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:190;backdrop-filter:blur(3px);}
+.mobile-menu-btn{display:none;}
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:10px;}
+
+@media(max-width:1140px){.kpi-grid{grid-template-columns:repeat(2,1fr);}.charts-row,.bottom-row{grid-template-columns:1fr;}.rpt-grid{grid-template-columns:1fr;}.rpt-filters-grid{grid-template-columns:1fr 1fr;}.qr-scan-layout{grid-template-columns:1fr;}}
+@media(max-width:820px){:root{--sidebar-w:0px;}.sidebar{transform:translateX(-256px);width:256px;}.sidebar.open{transform:translateX(0);box-shadow:var(--shadow-md);}.topbar{left:0;}.mobile-menu-btn{display:flex;}.mobile-overlay.show{display:block;}.main{margin-left:0;}.page{padding:16px;}}
+@media(max-width:520px){.kpi-grid{grid-template-columns:1fr;}}
 </style>
 </head>
 <body>
 
-<nav class="sidebar" id="sidebar">
-  <div class="sidebar-logo">
-    <div class="logo-icon">
-      <img src="https://pbs.twimg.com/profile_images/907450268123410432/6Y8bvMW7_400x400.jpg" alt="Logo" class="logo-img">
+<!-- ═══ LOGIN ═══ -->
+<div id="auth-screen">
+  <div class="login-box">
+    <div class="login-card">
+      <div class="login-logo">
+        <div class="login-logo-mark">
+          <img src="https://pbs.twimg.com/profile_images/907450268123410432/6Y8bvMW7_400x400.jpg" alt="Iet">
+        </div>
+        <div class="login-logo-text"><em>Iet</em></div>
+      </div>
+      <div class="login-heading">Нэвтрэх</div>
+      <div class="login-sub">Ирцийн удирдлагын системд тавтай морилно уу</div>
+
+      <!-- Demo hint -->
+      <div class="demo-hint">
+         <strong>Demo горим</strong><br>
+        <span class="demo-role"> Admin</span> admin@iet.mn · <strong>Admin@2026</strong><br>
+        <span class="demo-role"> Багш</span> anna@iet.mn · <strong>Teacher@2026</strong>
+      </div>
+
+      <div id="login-error" class="login-error"></div>
+      <form onsubmit="handleLogin(event)">
+        <div class="form-group">
+          <label class="form-label">ИМЭЙЛ ХАЯГ</label>
+          <input id="email-input" class="form-field" type="email" placeholder="admin@iet.mn" autocomplete="email" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">НУУЦ ҮГ</label>
+          <div class="pass-wrap">
+            <input id="pass-input" class="form-field" type="password" placeholder="••••••••" autocomplete="current-password" required style="padding-right:42px">
+            <span class="pass-toggle" onclick="const i=document.getElementById('pass-input');i.type=i.type==='password'?'text':'password';this.textContent=i.type==='password'?'👁':'🙈';">👁</span>
+          </div>
+        </div>
+        <button id="login-btn" class="login-btn" type="submit">Нэвтрэх</button>
+        <button class="login-btn" type="button" onclick="handleSignUp(event)" style="margin-top:10px;background:linear-gradient(135deg,#059669,#047857)">Бүртгүүлэх</button>
+        <div class="login-footer">
+          <a class="forgot-link" onclick="handleForgotPw()">Нууц үг мартсан уу?</a>
+          <span style="font-size:12px;color:var(--ink3)">v3.0</span>
+        </div>
+      </form>
     </div>
-    <div class="logo-text"><span>Iet</span></div>
+  </div>
+</div>
+
+<!-- ═══ APP ═══ -->
+<div id="app-screen">
+  <div id="app-loader" style="display:none">
+    <div class="loader-ring"></div>
+    <div class="loader-text">Өгөгдөл ачааллаж байна...</div>
   </div>
 
-  <div class="sidebar-nav">
-    <div class="nav-section">
-      <div class="nav-label">Main</div>
-      <a class="nav-item active" data-page="dashboard" onclick="navigate('dashboard')">
-        <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+  <!-- SIDEBAR -->
+  <nav class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-mark"><img src="https://pbs.twimg.com/profile_images/907450268123410432/6Y8bvMW7_400x400.jpg" alt="Iet"></div>
+      <div class="logo-wordmark"><em>Iet</em></div>
+    </div>
+    <div class="sidebar-body">
+      <!-- ADMIN nav -->
+      <div class="nav-section-label admin-only">Үндсэн</div>
+      <a class="nav-item admin-only" data-page="dashboard" onclick="navigate('dashboard')">
+        <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
         Хяналтын самбар
       </a>
-      <a class="nav-item" data-page="teachers" onclick="navigate('teachers')">
-        <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      <a class="nav-item admin-only" data-page="teachers" onclick="navigate('teachers')">
+        <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
         Багш нар
       </a>
-      <a class="nav-item" data-page="attendance" onclick="navigate('attendance')">
+      <a class="nav-item admin-only" data-page="attendance" onclick="navigate('attendance')">
         <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
         Ирц
-        <span class="nav-badge">3</span>
+        <span class="nav-badge" id="absent-badge">0</span>
       </a>
-      <a class="nav-item" data-page="reports" onclick="navigate('reports')">
-        <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+      <a class="nav-item admin-only" data-page="reports" onclick="navigate('reports')">
+        <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
         Тайлан
       </a>
-    </div>
-    <div class="nav-section">
-      <div class="nav-label">Систем</div>
-      <a class="nav-item" data-page="settings" onclick="navigate('settings')">
+
+      <!-- TEACHER nav -->
+      <div class="nav-section-label teacher-only">Миний хэсэг</div>
+      <a class="nav-item teacher-only" data-page="my-attendance" onclick="navigate('my-attendance')">
+        <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        Миний Ирц
+      </a>
+
+      <!-- SHARED nav -->
+      <div class="nav-section-label" style="margin-top:6px">QR Скан</div>
+      <a class="nav-item" data-page="qr-scan" onclick="navigate('qr-scan')">
+        <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3M17 17v3M20 14v3"/></svg>
+        QR Скан
+      </a>
+
+      <div class="nav-section-label admin-only" style="margin-top:6px">Систем</div>
+      <a class="nav-item admin-only" data-page="settings" onclick="navigate('settings')">
         <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
         Тохиргоо
       </a>
-      <a class="nav-item" onclick="showToast('Амжилттай гарлаа','success')">
+      <a class="nav-item" onclick="doLogout()">
         <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
         Гарах
       </a>
     </div>
-  </div>
-
-  <div class="sidebar-footer">
-    <div class="sidebar-user">
-      <div class="user-avatar">SA</div>
-      <div class="user-info">
-        <div class="user-name">Admin</div>
-        <div class="user-role">Administrator</div>
+    <div class="sidebar-footer">
+      <div class="user-card">
+        <div class="user-ava" id="sidebar-ava">SA</div>
+        <div>
+          <div class="user-name" id="sidebar-name">Admin</div>
+          <div id="sidebar-role" class="role-badge role-admin">Администратор</div>
+        </div>
       </div>
     </div>
-  </div>
-</nav>
+  </nav>
 
-<div class="mobile-overlay" id="mobileOverlay" onclick="closeSidebar()"></div>
+  <div class="mobile-overlay" id="mOverlay" onclick="closeSidebar()"></div>
 
-<header class="topbar">
-  <button class="mobile-menu-btn" onclick="toggleSidebar()">
-    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-  </button>
-  <div class="topbar-title" id="topbarTitle">Хяналтын самбар</div>
-  <div class="topbar-search">
-    <svg class="search-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-    <input class="search-input" placeholder="Багш, бичлэг хайх..." type="text">
-  </div>
-  <div class="topbar-actions">
-    <button class="icon-btn" onclick="showToast('Шинэ мэдэгдэл байхгүй','info')">
-      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-      <span class="notif-dot"></span>
+  <!-- TOPBAR -->
+  <header class="topbar">
+    <button class="mobile-menu-btn icon-btn" onclick="toggleSidebar()">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
     </button>
-    <button class="icon-btn" id="themeBtn" onclick="toggleTheme()" title="Харанхуй горим">
-      <svg id="themeIcon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-    </button>
-    <div class="topbar-profile">
-      <div class="tp-avatar">SA</div>
-      <span class="tp-name">Admin</span>
-      <svg class="tp-chevron" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+    <div class="topbar-title" id="topbarTitle">Хяналтын самбар</div>
+    <div class="topbar-search">
+      <svg class="search-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input class="search-input" placeholder="Хайх..." type="text" oninput="filterTable(this.value)">
     </div>
-  </div>
-</header>
-
-
-<main class="main">
-
-  <div class="page active" id="page-dashboard">
-    <div class="kpi-grid">
-      <div class="kpi-card blue">
-        <div class="kpi-header">
-          <div class="kpi-icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
-          <span class="kpi-badge badge-up">↑ 3.2%</span>
-        </div>
-        <div class="kpi-value" data-target="142" data-count="0">0</div>
-        <div class="kpi-label">Нийт багш нар</div>
-        <div class="kpi-sub">12 тэнхим · 6 анги</div>
-      </div>
-      <div class="kpi-card green">
-        <div class="kpi-header">
-          <div class="kpi-icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
-          <span class="kpi-badge badge-up">↑ 1.8%</span>
-        </div>
-        <div class="kpi-value" data-target="118" data-count="0">0</div>
-        <div class="kpi-label">Өнөөдөр ирсэн</div>
-        <div class="kpi-sub">83.1% ирцийн хувь</div>
-      </div>
-      <div class="kpi-card red">
-        <div class="kpi-header">
-          <div class="kpi-icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></div>
-          <span class="kpi-badge badge-down">↑ 0.5%</span>
-        </div>
-        <div class="kpi-value" data-target="16" data-count="0">0</div>
-        <div class="kpi-label">Өнөөдөр ирээгүй</div>
-        <div class="kpi-sub">Нийт ажилтны 11.3%</div>
-      </div>
-      <div class="kpi-card yellow">
-        <div class="kpi-header">
-          <div class="kpi-icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
-          <span class="kpi-badge badge-down">↓ 0.3%</span>
-        </div>
-        <div class="kpi-value" data-target="8" data-count="0">0</div>
-        <div class="kpi-label">Хоцорсон</div>
-        <div class="kpi-sub">5.6% · 12 мин өмнө</div>
-      </div>
-    </div>
-
-    <div class="charts-row">
-      <div class="chart-card">
-        <div class="card-header">
-          <div>
-            <div class="card-title">Долоо хоног тутмын ирц</div>
-            <div class="card-sub">Даваа — Баасан · Энэ долоо хоног vs Өнгөрсөн долоо хоног</div>
-          </div>
-          <div style="display:flex;gap:6px;">
-            <span class="chip active">Долоо хоног</span>
-            <span class="chip">Сар</span>
-          </div>
-        </div>
-        <div class="bar-chart" id="barChart"></div>
-        <div class="legend">
-          <div class="legend-item"><div class="legend-dot" style="background:var(--primary)"></div>Ирсэн</div>
-          <div class="legend-item"><div class="legend-dot" style="background:var(--error)"></div>Ирээгүй</div>
-          <div class="legend-item"><div class="legend-dot" style="background:var(--warning)"></div>Хоцорсон</div>
-        </div>
-      </div>
-
-      <div class="chart-card">
-        <div class="card-header">
-          <div>
-            <div class="card-title">Ирцийн харьцаа</div>
-            <div class="card-sub">Бодит цаг</div>
-          </div>
-        </div>
-        <div class="donut-wrap">
-          <svg class="donut-svg" viewBox="0 0 100 100">
-            <circle cx="50" cy="50" r="38" fill="none" stroke="var(--surface2)" stroke-width="12"/>
-            <circle id="d1" cx="50" cy="50" r="38" fill="none" stroke="#2563EB" stroke-width="12"
-              stroke-dasharray="0 239" stroke-dashoffset="0" stroke-linecap="round" style="transition:stroke-dasharray 1.5s ease"/>
-            <circle id="d2" cx="50" cy="50" r="38" fill="none" stroke="#F59E0B" stroke-width="12"
-              stroke-dasharray="0 239" stroke-linecap="round" style="transition:stroke-dasharray 1.5s 0.3s ease"/>
-            <circle id="d3" cx="50" cy="50" r="38" fill="none" stroke="#EF4444" stroke-width="12"
-              stroke-dasharray="0 239" stroke-linecap="round" style="transition:stroke-dasharray 1.5s 0.6s ease"/>
-          </svg>
-          <div class="donut-center">
-            <div class="donut-pct">83%</div>
-            <div class="donut-lbl">Ирсэн</div>
-          </div>
-        </div>
-        <div class="donut-stats">
-          <div class="donut-stat">
-            <div class="donut-stat-val" style="color:var(--primary)">118</div>
-            <div class="donut-stat-lbl">Ирсэн</div>
-          </div>
-          <div class="donut-stat">
-            <div class="donut-stat-val" style="color:var(--error)">16</div>
-            <div class="donut-stat-lbl">Ирээгүй</div>
-          </div>
-          <div class="donut-stat">
-            <div class="donut-stat-val" style="color:var(--warning)">8</div>
-            <div class="donut-stat-lbl">Хоцорсон</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="bottom-row">
-      <div class="activity-card">
-        <div class="card-header">
-          <div>
-            <div class="card-title">Сүүлийн үйл явдал</div>
-            <div class="card-sub">Хамгийн сүүлийн ирцийн бүртгэл</div>
-          </div>
-          <span class="count-badge">12 өдөр</span>
-        </div>
-        <div class="activity-list">
-          <div class="activity-item">
-            <div class="act-avatar" style="background:linear-gradient(135deg,#2563EB,#7C3AED)">М</div>
-            <div class="act-info">
-              <div class="act-name">Мөнх</div>
-              <div class="act-desc">Математик</div>
-            </div>
-            <span class="act-status status-present">Ирсэн</span>
-            <span class="act-time">8:02</span>
-          </div>
-          <div class="activity-item">
-            <div class="act-avatar" style="background:linear-gradient(135deg,#F59E0B,#EF4444)">С</div>
-            <div class="act-info">
-              <div class="act-name">Сараа</div>
-              <div class="act-desc">Хими</div>
-            </div>
-            <span class="act-status status-late">Хоцорсон</span>
-            <span class="act-time">8:24</span>
-          </div>
-          <div class="activity-item">
-            <div class="act-avatar" style="background:linear-gradient(135deg,#10B981,#2563EB)">Д</div>
-            <div class="act-info">
-              <div class="act-name">Даваа</div>
-              <div class="act-desc">Түүх</div>
-            </div>
-            <span class="act-status status-absent">Ирээгүй</span>
-            <span class="act-time">8:00</span>
-          </div>
-          <div class="activity-item">
-            <div class="act-avatar" style="background:linear-gradient(135deg,#7C3AED,#EC4899)">А</div>
-            <div class="act-info">
-              <div class="act-name">Анна</div>
-              <div class="act-desc">Англи хэл</div>
-            </div>
-            <span class="act-status status-present">Ирсэн</span>
-            <span class="act-time">7:58</span>
-          </div>
-          <div class="activity-item">
-            <div class="act-avatar" style="background:linear-gradient(135deg,#F59E0B,#10B981)">Б</div>
-            <div class="act-info">
-              <div class="act-name">Баяр Эрдэнэ</div>
-              <div class="act-desc">Биеийн тамир</div>
-            </div>
-            <span class="act-status status-present">Ирсэн</span>
-            <span class="act-time">7:55</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="activity-card">
-        <div class="card-header">
-          <div>
-            <div class="card-title">Хамгийн их ирц</div>
-            <div class="card-sub">Энэ сарын шилдэг бүртгэл</div>
-          </div>
-        </div>
-        <div class="performer-list">
-          <div class="performer-item">
-            <div class="perf-rank gold">🥇</div>
-            <div class="perf-avatar" style="background:linear-gradient(135deg,#2563EB,#7C3AED)">АП</div>
-            <div class="perf-info"><div class="perf-name">Анна</div><div class="perf-sub">Англи хэл</div></div>
-            <div class="perf-bar-wrap"><div class="perf-bar-track"><div class="perf-bar-fill" style="width:100%"></div></div></div>
-            <div class="perf-pct">100%</div>
-          </div>
-          <div class="performer-item">
-            <div class="perf-rank silver">🥈</div>
-            <div class="perf-avatar" style="background:linear-gradient(135deg,#10B981,#2563EB)">БЭ</div>
-            <div class="perf-info"><div class="perf-name">Баяр Эрдэнэ</div><div class="perf-sub">Биеийн тамир</div></div>
-            <div class="perf-bar-wrap"><div class="perf-bar-track"><div class="perf-bar-fill" style="width:98%"></div></div></div>
-            <div class="perf-pct">98%</div>
-          </div>
-          <div class="performer-item">
-            <div class="perf-rank bronze">🥉</div>
-            <div class="perf-avatar" style="background:linear-gradient(135deg,#F59E0B,#EF4444)">М</div>
-            <div class="perf-info"><div class="perf-name">Мөнх</div><div class="perf-sub">Математик</div></div>
-            <div class="perf-bar-wrap"><div class="perf-bar-track"><div class="perf-bar-fill" style="width:96%"></div></div></div>
-            <div class="perf-pct">96%</div>
-          </div>
-          <div class="performer-item">
-            <div class="perf-rank">4</div>
-            <div class="perf-avatar" style="background:linear-gradient(135deg,#7C3AED,#EC4899)">Дл</div>
-            <div class="perf-info"><div class="perf-name">Долгор</div><div class="perf-sub">Зураг</div></div>
-            <div class="perf-bar-wrap"><div class="perf-bar-track"><div class="perf-bar-fill" style="width:94%"></div></div></div>
-            <div class="perf-pct">94%</div>
-          </div>
-          <div class="performer-item">
-            <div class="perf-rank">5</div>
-            <div class="perf-avatar" style="background:linear-gradient(135deg,#06B6D4,#2563EB)">Мн</div>
-            <div class="perf-info"><div class="perf-name">Манлай</div><div class="perf-sub">Хими</div></div>
-            <div class="perf-bar-wrap"><div class="perf-bar-track"><div class="perf-bar-fill" style="width:92%"></div></div></div>
-            <div class="perf-pct">92%</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  
-  <div class="page" id="page-attendance">
-    <div class="page-header">
-      <div>
-        <div class="page-title">Ирц</div>
-        <div class="page-desc">Багш нарын өдөр тутмын ирцийг тэмдэглэж, удирдана</div>
-      </div>
-      <div style="display:flex;gap:8px;">
-        <button class="btn btn-outline" onclick="showToast('Ирц экспортлогдлоо','success')">
-          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          Экспорт
-        </button>
-        <button class="btn btn-primary" onclick="showToast('Бүгдийг ирсэн гэж тэмдэглэлээ','success')">
-          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
-          Бүгдийг тэмдэглэх
-        </button>
-      </div>
-    </div>
-
-    <div class="filters-bar">
-      <svg style="width:16px;height:16px;color:var(--text-3);flex-shrink:0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
-      <input class="filter-input" placeholder="Нэр эсвэл тэнхимээр хайх..." type="text" oninput="filterTable(this.value)">
-      <div class="filter-sep"></div>
-      <select class="filter-select" onchange="showToast('Шүүлтүүр хэрэглэгдлээ','info')">
-        <option>Бүх статус</option>
-        <option>Ирсэн</option>
-        <option>Ирээгүй</option>
-        <option>Хоцорсон</option>
-      </select>
-      <select class="filter-select" onchange="showToast('Тэнхимээр шүүлээ','info')">
-        <option>Бүх тэнхим</option>
-        <option>Математик</option>
-        <option>Хими</option>
-        <option>Англи хэл</option>
-        <option>Түүх</option>
-      </select>
-      <input type="date" class="filter-select" value="2026-03-18">
-    </div>
-
-    <div class="table-card">
-      <div class="table-scroll">
-        <table id="attendanceTable">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Багш</th>
-              <th>Тэнхим</th>
-              <th>Огноо</th>
-              <th>Ирсэн цаг</th>
-              <th>Статус</th>
-              <th>Үйлдэл</th>
-            </tr>
-          </thead>
-          <tbody id="tableBody"></tbody>
-        </table>
-      </div>
-      <div class="table-footer">
-        <span id="tableCount">32 багшийн 1–10-ыг харуулж байна</span>
-        <div class="pagination">
-          <button class="pg-btn">‹</button>
-          <button class="pg-btn active">1</button>
-          <button class="pg-btn">2</button>
-          <button class="pg-btn">3</button>
-          <button class="pg-btn">4</button>
-          <button class="pg-btn">›</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="page" id="page-teachers">
-    <div class="page-header">
-      <div>
-        <div class="page-title">Багш нар</div>
-        <div class="page-desc">Профайл болон ирцийн түүхийг харах</div>
-      </div>
-      <button class="btn btn-primary" onclick="showToast('Багш нэмэгдлээ','success')">
-        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-        Багш нэмэх
+    <div class="topbar-right">
+      <button class="icon-btn" onclick="toast('Шинэ мэдэгдэл байхгүй','info')">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
       </button>
+      <button class="icon-btn" onclick="toggleTheme()">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+      </button>
+      <div class="topbar-user">
+        <div class="topbar-user-ava" id="topbar-ava">SA</div>
+        <span class="topbar-user-name" id="topbar-name">Admin</span>
+        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
     </div>
-    <div class="profile-grid">
-      <div>
-        <div class="profile-card">
-          <div class="profile-banner"><div class="profile-banner-pattern"></div></div>
-          <div class="profile-avatar-wrap">
-            <div class="profile-avatar">МБ</div>
-            <div class="profile-online"></div>
+  </header>
+
+  <main class="main">
+
+    <div class="page active" id="page-dashboard">
+      <div class="page-header">
+        <div>
+          <div class="page-heading">Хяналтын самбар</div>
+          <div class="page-sub" id="today-sub">Өнөөдрийн тойм</div>
+        </div>
+        <div class="header-actions">
+          <button class="btn btn-qr" onclick="navigate('qr-scan')"> QR Скан нээх</button>
+          <button class="btn btn-ghost" onclick="toast('Тайлан экспортлогдлоо','success')">
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Экспорт
+          </button>
+          <button class="btn btn-primary" onclick="navigate('attendance')">
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Ирц тэмдэглэх
+          </button>
+        </div>
+      </div>
+      <div class="kpi-grid">
+        <div class="kpi-card"><div class="kpi-accent" style="background:var(--grad)"></div><div class="kpi-top"><div class="kpi-icon blue"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></div></div><div class="kpi-value" id="kpi-total">0</div><div class="kpi-label">Нийт багш</div><div class="kpi-meta">Firestore-с татсан</div></div>
+        <div class="kpi-card"><div class="kpi-accent" style="background:var(--green)"></div><div class="kpi-top"><div class="kpi-icon green"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div></div><div class="kpi-value" id="kpi-present">0</div><div class="kpi-label">Өнөөдөр ирсэн</div><div class="kpi-meta" id="kpi-pct-sub">0% ирцийн хувь</div></div>
+        <div class="kpi-card"><div class="kpi-accent" style="background:var(--red)"></div><div class="kpi-top"><div class="kpi-icon red"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></div></div><div class="kpi-value" id="kpi-absent">0</div><div class="kpi-label">Өнөөдөр ирээгүй</div><div class="kpi-meta">Анхаарал шаардлагатай</div></div>
+        <div class="kpi-card"><div class="kpi-accent" style="background:var(--qr-green)"></div><div class="kpi-top"><div class="kpi-icon" style="background:var(--qr-green-bg);color:var(--qr-green)"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3M17 17v3M20 14v3"/></svg></div></div><div class="kpi-value" id="kpi-late">0</div><div class="kpi-label">Хоцорсон</div><div class="kpi-meta" id="kpi-qr-count">📷 0 QR скан</div></div>
+      </div>
+      <div class="charts-row">
+        <div class="card">
+          <div class="card-head"><div><div class="card-title">Долоо хоногийн ирц</div><div class="card-sub">Да — Ба</div></div></div>
+          <div class="bar-chart-wrap" id="barChart"></div>
+          <div class="chart-legend">
+            <div class="legend-item"><div class="legend-dot" style="background:var(--accent)"></div>Ирсэн</div>
+            <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div>Ирээгүй</div>
+            <div class="legend-item"><div class="legend-dot" style="background:var(--amber)"></div>Хоцорсон</div>
           </div>
-          <div class="profile-name">Мөнх</div>
-          <div class="profile-role">Математикийн багш</div>
-          <div class="profile-dept">Шинжлэх ухаан, технологийн тэнхим</div>
-          <div class="profile-stats-row">
-            <div class="profile-stat">
-              <div class="profile-stat-val" style="color:var(--primary)">96%</div>
-              <div class="profile-stat-lbl">Ирц</div>
-            </div>
-            <div class="profile-stat">
-              <div class="profile-stat-val">8</div>
-              <div class="profile-stat-lbl">Жил</div>
-            </div>
-            <div class="profile-stat">
-              <div class="profile-stat-val" style="color:var(--success)">4.9</div>
-              <div class="profile-stat-lbl">Үнэлгээ</div>
+        </div>
+        <div class="card">
+          <div class="card-head"><div><div class="card-title">Ирцийн харьцаа</div><div class="card-sub">Бодит цаг</div></div></div>
+          <div class="donut-wrap">
+            <svg class="donut-svg" viewBox="0 0 100 100">
+              <circle cx="50" cy="50" r="38" fill="none" stroke="var(--surface2)" stroke-width="11"/>
+              <circle id="d1" cx="50" cy="50" r="38" fill="none" stroke="var(--accent)" stroke-width="11" stroke-dasharray="0 239" stroke-linecap="round" style="transition:stroke-dasharray 1.4s ease"/>
+              <circle id="d2" cx="50" cy="50" r="38" fill="none" stroke="var(--amber)"  stroke-width="11" stroke-dasharray="0 239" stroke-linecap="round" style="transition:stroke-dasharray 1.4s 0.25s ease"/>
+              <circle id="d3" cx="50" cy="50" r="38" fill="none" stroke="var(--red)"    stroke-width="11" stroke-dasharray="0 239" stroke-linecap="round" style="transition:stroke-dasharray 1.4s 0.5s ease"/>
+            </svg>
+            <div class="donut-center"><div class="donut-num">—</div><div class="donut-lbl">ирсэн</div></div>
+          </div>
+          <div class="donut-stats">
+            <div style="text-align:center"><div class="donut-stat-val" id="donut-p" style="color:var(--accent)">—</div><div class="donut-stat-lbl">Ирсэн</div></div>
+            <div style="text-align:center"><div class="donut-stat-val" id="donut-a" style="color:var(--red)">—</div><div class="donut-stat-lbl">Ирээгүй</div></div>
+            <div style="text-align:center"><div class="donut-stat-val" id="donut-l" style="color:var(--amber)">—</div><div class="donut-stat-lbl">Хоцорсон</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="bottom-row">
+        <div class="card">
+          <div class="card-head"><div><div class="card-title">Сүүлийн бүртгэл</div><div class="card-sub">Бодит цагийн шинэчлэл</div></div><span class="count-pill" id="activity-count">—</span></div>
+          <div id="activityList" style="display:flex;flex-direction:column;gap:4px"></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><div><div class="card-title">Шилдэг ирц</div><div class="card-sub">Энэ сарын тэргүүлэгчид</div></div></div>
+          <div id="leaderboard" class="perf-list"></div>
+        </div>
+      </div>
+    </div>
+
+   
+    <div class="page" id="page-attendance">
+      <div class="page-header">
+        <div><div class="page-heading">Ирц</div><div class="page-sub">Өдөр тутмын ирцийн бүртгэл</div></div>
+        <div class="header-actions">
+          <button class="btn btn-qr" onclick="navigate('qr-scan')"> QR Скан</button>
+          <button class="btn btn-ghost" onclick="toast('Экспортлогдлоо','success')">Экспорт</button>
+          <button class="btn btn-primary" onclick="markAllPresent()">✓ Бүгдийг тэмдэглэх</button>
+        </div>
+      </div>
+      <div class="filter-bar">
+        <svg style="width:15px;height:15px;color:var(--ink3);flex-shrink:0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+        <input class="filter-input" placeholder="Нэр эсвэл тэнхимээр хайх..." oninput="filterTable(this.value)">
+        <div class="filter-sep"></div>
+        <select class="filter-select"><option>Бүх статус</option><option>Ирсэн</option><option>Ирээгүй</option><option>Хоцорсон</option></select>
+        <input type="date" class="filter-select" id="att-date">
+      </div>
+      <div class="table-card">
+        <div class="table-scroll">
+          <table><thead><tr><th>#</th><th>Багш</th><th>Тэнхим</th><th>Огноо</th><th>Цаг / Арга</th><th>Статус</th><th>Үйлдэл</th></tr></thead>
+          <tbody id="tableBody"></tbody></table>
+        </div>
+        <div class="table-footer">
+          <span id="tableCount">—</span>
+          <div class="pagination">
+            <button class="pg-btn">‹</button><button class="pg-btn active">1</button><button class="pg-btn">2</button><button class="pg-btn">›</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+   
+    <div class="page" id="page-teachers">
+      <div class="page-header">
+        <div><div class="page-heading">Багш нар</div><div class="page-sub">Нийт <span id="teacher-count">—</span> багш</div></div>
+        <div class="header-actions">
+          <button class="btn btn-qr" onclick="toast('Бүх QR экспортлогдлоо','success')">📷 Бүх QR</button>
+          <button class="btn btn-primary" onclick="openAddTeacher()">+ Багш нэмэх</button>
+        </div>
+      </div>
+      <div class="teachers-grid" id="teacherCards"></div>
+    </div>
+
+    <div class="page" id="page-qr-scan">
+      <div class="page-header">
+        <div>
+          <div class="page-heading"> QR Скан</div>
+          <div class="page-sub">Камераар скан хийж ирц автоматаар бүртгэнэ</div>
+        </div>
+        <button class="btn btn-qr" onclick="startQRScanner()"> Камер дахин эхлүүлэх</button>
+      </div>
+      <div class="qr-scan-layout">
+     
+        <div class="qr-camera-card">
+          <div class="qr-camera-title">Камер</div>
+          <div class="qr-camera-sub">Багшийн QR кодыг камер руу чиглүүлнэ үү</div>
+          <div class="qr-video-wrap">
+            <video id="qr-video" playsinline muted></video>
+            <div class="qr-scan-overlay">
+              <div class="qr-scan-frame">
+                <div class="qr-scan-frame-b">
+                  <div class="qr-scan-frame-bl"></div>
+                </div>
+              </div>
+              <div class="qr-scan-line"></div>
             </div>
           </div>
-          <div class="profile-info-list">
-            <div class="profile-info-item">
-              <div class="pii-icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></div>
-              <div><div class="pii-label">И-мэйл</div><div class="pii-val">munkh@school.mn</div></div>
+          <canvas id="qr-canvas" class="qr-canvas"></canvas>
+          <div class="qr-status-bar" id="qr-status">Камер эхлүүлж байна...</div>
+
+          <div id="qr-feedback" class="qr-feedback-card"></div>
+
+          <div id="qr-manual-fallback" class="qr-manual-fallback">
+            <p>⚠️ Камер ажиллахгүй байна — гараар QR утга оруулах:</p>
+            <div class="qr-manual-row">
+              <input id="qr-manual-input" class="qr-manual-input" placeholder='{"type":"iet-attendance","teacherId":"t1"}'>
+              <button class="btn btn-qr" onclick="handleManualQRInput()" style="height:36px;padding:0 14px">Оруулах</button>
             </div>
-            <div class="profile-info-item">
-              <div class="pii-icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.99 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.92 1h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 8.91a16 16 0 0 0 5.99 5.99l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg></div>
-              <div><div class="pii-label">Утас</div><div class="pii-val">+976 9911 0101</div></div>
+          </div>
+        </div>
+
+        
+        <div>
+          <div class="qr-log-card" style="margin-bottom:14px">
+            <div class="qr-stat-row">
+              <div class="qr-stat">
+                <div class="qr-stat-val" style="color:var(--qr-green)" id="qr-stat-today">—</div>
+                <div class="qr-stat-lbl">Өнөөдөр скан</div>
+              </div>
+              <div class="qr-stat">
+                <div class="qr-stat-val" style="color:var(--accent)" id="qr-stat-total">—</div>
+                <div class="qr-stat-lbl">Нийт бүртгэл</div>
+              </div>
             </div>
-            <div class="profile-info-item">
-              <div class="pii-icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
-              <div><div class="pii-label">Элссэн</div><div class="pii-val">2017 оны 9-р сар</div></div>
-            </div>
-            <div class="profile-info-item">
-              <div class="pii-icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></div>
-              <div><div class="pii-label">Өрөө</div><div class="pii-val">Б-204</div></div>
+          </div>
+        
+          <div class="qr-log-card">
+            <div class="qr-log-title">QR Бүртгэлийн түүх</div>
+            <div class="qr-log-sub">Хамгийн сүүлийн 8 скан</div>
+            <div id="qr-scan-log">
+              <div class="qr-log-empty">Одоохондоо QR скан бүртгэл байхгүй</div>
             </div>
           </div>
         </div>
       </div>
+    </div>
 
-      <div>
-        <div class="calendar-card">
-          <div class="cal-header">
-            <div class="cal-month">2026 оны 3-р сар</div>
-            <div class="cal-nav">
-              <button class="cal-btn" onclick="showToast('Өмнөх сар','info')"><svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
-              <button class="cal-btn" onclick="showToast('Дараагийн сар','info')"><svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></button>
-            </div>
+    <div class="page" id="page-my-attendance">
+      <div class="page-header">
+        <div><div class="page-heading">Миний Ирц</div><div class="page-sub">Өнөөдрийн болон долоо хоногийн байдал</div></div>
+        <button class="btn btn-qr" onclick="navigate('qr-scan')"> QR-аар бүртгүүлэх</button>
+      </div>
+      <div id="my-att-content"></div>
+    </div>
+
+    <div class="page" id="page-reports">
+      <div class="page-header">
+        <div><div class="page-heading">Тайлан</div><div class="page-sub">Ирцийн тайлан ба дүн шинжилгээ</div></div>
+        <div class="header-actions">
+          <button class="btn" style="background:var(--red-bg);color:var(--red);border:1px solid rgba(220,38,38,0.2)" onclick="toast('PDF экспортлогдлоо','success')">PDF</button>
+          <button class="btn" style="background:var(--green-bg);color:var(--green);border:1px solid rgba(5,150,105,0.2)" onclick="toast('Excel экспортлогдлоо','success')">Excel</button>
+        </div>
+      </div>
+      <div class="rpt-filters">
+        <div style="font-size:14px;font-weight:700;margin-bottom:14px">Шүүлтүүр</div>
+        <div class="rpt-filters-grid">
+          <div class="form-group"><label style="font-size:11.5px;font-weight:700;color:var(--ink2);display:block;margin-bottom:5px">ОГНООНЫ ХҮРЭЭ</label><select class="filter-select" style="width:100%"><option>Энэ сар</option><option>Өнгөрсөн сар</option><option>Энэ жил</option></select></div>
+          <div class="form-group"><label style="font-size:11.5px;font-weight:700;color:var(--ink2);display:block;margin-bottom:5px">ТЭНХИМ</label><select class="filter-select" style="width:100%"><option>Бүх тэнхим</option><option>Математик</option><option>Хими</option></select></div>
+          <div class="form-group"><label style="font-size:11.5px;font-weight:700;color:var(--ink2);display:block;margin-bottom:5px">СТАТУС</label><select class="filter-select" style="width:100%"><option>Бүх статус</option><option>Ирсэн</option><option>Ирээгүй</option></select></div>
+          <div class="form-group"><label style="font-size:11.5px;font-weight:700;color:var(--ink2);display:block;margin-bottom:5px">&nbsp;</label><button class="btn btn-primary" style="width:100%;justify-content:center" onclick="toast('Тайлан гарлаа','success')">Үүсгэх</button></div>
+        </div>
+      </div>
+      <div class="rpt-grid">
+        <div class="card">
+          <div class="card-head"><div><div class="card-title">Сарын ирц</div><div class="card-sub">2026 оны 1–3-р сар</div></div></div>
+          <div style="display:flex;align-items:flex-end;gap:6px;height:140px;padding:0 4px">
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px"><div style="font-size:11px;color:var(--ink3);font-weight:600">88%</div><div style="flex:1;width:100%;background:var(--grad);border-radius:5px 5px 0 0;height:88%"></div><div style="font-size:11px;color:var(--ink3)">1-р сар</div></div>
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px"><div style="font-size:11px;color:var(--ink3);font-weight:600">84%</div><div style="flex:1;width:100%;background:var(--grad);border-radius:5px 5px 0 0;height:84%;opacity:0.82"></div><div style="font-size:11px;color:var(--ink3)">2-р сар</div></div>
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px"><div style="font-size:11px;color:var(--ink3);font-weight:600">83%</div><div style="flex:1;width:100%;background:var(--grad);border-radius:5px 5px 0 0;height:83%;opacity:0.68"></div><div style="font-size:11px;color:var(--ink3)">3-р сар</div></div>
           </div>
-          <div class="calendar-grid" id="calendarGrid"></div>
-          <div class="cal-legend">
-            <div class="cal-legend-item"><div class="cal-legend-dot" style="background:var(--primary)"></div>Өнөөдөр</div>
-            <div class="cal-legend-item"><div class="cal-legend-dot" style="background:var(--success)"></div>Ирсэн</div>
-            <div class="cal-legend-item"><div class="cal-legend-dot" style="background:var(--error)"></div>Ирээгүй</div>
-            <div class="cal-legend-item"><div class="cal-legend-dot" style="background:var(--warning)"></div>Хоцорсон</div>
+          <div class="rpt-summary">
+            <div><div class="rpt-sum-val">85%</div><div class="rpt-sum-lbl">Дундаж</div></div>
+            <div><div class="rpt-sum-val" style="color:var(--green)">1,243</div><div class="rpt-sum-lbl">Ирсэн</div></div>
+            <div><div class="rpt-sum-val" style="color:var(--red)">187</div><div class="rpt-sum-lbl">Ирээгүй</div></div>
           </div>
         </div>
-
-        <div class="kpi-grid" style="grid-template-columns:repeat(3,1fr)">
-          <div class="kpi-card green" style="padding:16px">
-            <div class="kpi-icon" style="width:36px;height:36px;border-radius:10px;margin-bottom:10px"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
-            <div class="kpi-value" style="font-size:22px">23</div>
-            <div class="kpi-label" style="font-size:12px">Ирсэн өдөр</div>
-          </div>
-          <div class="kpi-card red" style="padding:16px">
-            <div class="kpi-icon" style="width:36px;height:36px;border-radius:10px;margin-bottom:10px"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></div>
-            <div class="kpi-value" style="font-size:22px">1</div>
-            <div class="kpi-label" style="font-size:12px">Ирээгүй өдөр</div>
-          </div>
-          <div class="kpi-card yellow" style="padding:16px">
-            <div class="kpi-icon" style="width:36px;height:36px;border-radius:10px;margin-bottom:10px"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
-            <div class="kpi-value" style="font-size:22px">0</div>
-            <div class="kpi-label" style="font-size:12px">Хоцорсон</div>
+        <div class="card">
+          <div class="card-head"><div><div class="card-title">Тэнхимийн задаргаа</div><div class="card-sub">Ирцийн хувь</div></div></div>
+          <div>
+            <div class="dept-bar-row"><div class="dept-name">Математик</div><div class="dept-track"><div class="dept-fill" style="width:94%"></div></div><div class="dept-pct">94%</div></div>
+            <div class="dept-bar-row"><div class="dept-name">Шинж. ухаан</div><div class="dept-track"><div class="dept-fill" style="width:88%;opacity:0.85"></div></div><div class="dept-pct">88%</div></div>
+            <div class="dept-bar-row"><div class="dept-name">Англи хэл</div><div class="dept-track"><div class="dept-fill" style="width:91%;opacity:0.8"></div></div><div class="dept-pct">91%</div></div>
+            <div class="dept-bar-row"><div class="dept-name">Түүх</div><div class="dept-track"><div class="dept-fill" style="width:79%;opacity:0.65"></div></div><div class="dept-pct">79%</div></div>
+            <div class="dept-bar-row"><div class="dept-name">Биеийн тамир</div><div class="dept-track"><div class="dept-fill" style="width:86%;opacity:0.72"></div></div><div class="dept-pct">86%</div></div>
           </div>
         </div>
       </div>
+    </div>
+
+   
+    <div class="page" id="page-settings">
+      <div class="page-header"><div><div class="page-heading">Тохиргоо</div><div class="page-sub">Системийн тохиргоог удирдах</div></div></div>
+      <div class="settings-layout">
+        <div class="settings-menu">
+          <div class="settings-mi active"> Ерөнхий </div>
+          <div class="settings-mi"> Мэдэгдэл</div>
+          <div class="settings-mi"> Аюулгүй байдал</div>
+          <div class="settings-mi"> QR Тохиргоо</div>
+        </div>
+        <div class="settings-panel">
+          <div class="settings-title">Ерөнхий тохиргоо</div>
+          <div class="settings-desc">Програмын харагдах байдал болон автоматжуулалт.</div>
+          <div class="settings-row">
+            <div><div class="settings-row-lbl">Харанхуй горим</div><div class="settings-row-desc">Гэрэл ба харанхуй хооронд солих</div></div>
+            <div class="toggle" onclick="toggleTheme();this.classList.toggle('on')"></div>
+          </div>
+          <div class="settings-row">
+            <div><div class="settings-row-lbl">QR хоцролт тодорхойлолт</div><div class="settings-row-desc">8:00-аас хойш скан хийсэн бол "Хоцорсон" гэж тэмдэглэх</div></div>
+            <div class="toggle on" onclick="this.classList.toggle('on');toast('QR тохиргоо хадгалагдлаа','success')"></div>
+          </div>
+          <div class="settings-row">
+            <div><div class="settings-row-lbl">И-мэйл мэдэгдэл</div><div class="settings-row-desc">Өдөр тутмын ирцийн хураангуй</div></div>
+            <div class="toggle on" onclick="this.classList.toggle('on');toast('Мэдэгдэл шинэчлэгдлээ','success')"></div>
+          </div>
+          <div class="settings-row" style="border-bottom:none;padding-top:20px">
+            <div><div class="settings-row-lbl" style="color:var(--red)">Системээс гарах</div></div>
+            <button class="btn" style="background:var(--red-bg);color:var(--red);border:1px solid rgba(220,38,38,0.2)" onclick="doLogout()">Гарах</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+
+<div id="markModal" class="modal-overlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal-box">
+    <div class="modal-title">Ирц тэмдэглэх</div>
+    <div class="modal-sub">Статус сонгоно уу</div>
+    <div class="modal-teacher-row">
+      <div class="modal-ava" id="modal-teacher-ava">?</div>
+      <div><div class="modal-teacher-name" id="modal-teacher-name"></div><div class="modal-teacher-dept" id="modal-teacher-dept"></div></div>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-btn modal-btn-p" onclick="confirmMark('present')">✓ Ирсэн</button>
+      <button class="modal-btn modal-btn-l" onclick="confirmMark('late')">⏰ Хоцорсон</button>
+      <button class="modal-btn modal-btn-a" onclick="confirmMark('absent')">✕ Ирээгүй</button>
+      <button class="modal-btn modal-cancel" onclick="closeModal()">Болих</button>
     </div>
   </div>
+</div>
 
-  <div class="page" id="page-reports">
-    <div class="page-header">
-      <div>
-        <div class="page-title">Тайлан</div>
-        <div class="page-desc">Ирцийн тайлан гаргах, экспортлох</div>
-      </div>
-      <div class="export-btns">
-        <button class="btn btn-pdf" onclick="showToast('PDF амжилттай экспортлогдлоо','success')">
-          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-          PDF экспорт
-        </button>
-        <button class="btn btn-excel" onclick="showToast('Excel файл экспортлогдлоо','success')">
-          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-          Excel экспорт
-        </button>
-      </div>
+
+<div id="qrModal" class="modal-overlay" onclick="if(event.target===this)closeQRModal()">
+  <div class="modal-box qr-modal-box">
+    <div class="modal-title">📷 QR Код</div>
+    <div class="modal-sub">Энэ кодыг скан станц дээр уншуулна уу</div>
+    <div class="modal-teacher-row" style="justify-content:center">
+      <div class="modal-ava" id="qr-modal-ava">?</div>
+      <div><div class="modal-teacher-name" id="qr-modal-name"></div><div class="modal-teacher-dept" id="qr-modal-dept"></div></div>
     </div>
-
-    <div class="reports-filters">
-      <div style="font-size:14px;font-weight:700;margin-bottom:14px;">Тайлан шүүх</div>
-      <div class="reports-filters-grid">
-        <div class="form-group">
-          <label>Огнооны хүрээ</label>
-          <select class="form-input"><option>Энэ сар</option><option>Өнгөрсөн сар</option><option>Энэ улирал</option><option>Энэ жил</option></select>
-        </div>
-        <div class="form-group">
-          <label>Тэнхим</label>
-          <select class="form-input"><option>Бүх тэнхим</option><option>Математик</option><option>Шинжлэх ухаан</option><option>Англи хэл</option></select>
-        </div>
-        <div class="form-group">
-          <label>Статус</label>
-          <select class="form-input"><option>Бүх статус</option><option>Ирсэн</option><option>Ирээгүй</option><option>Хоцорсон</option></select>
-        </div>
-        <div class="form-group">
-          <label>&nbsp;</label>
-          <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="showToast('Тайлан гарлаа','success')">Үүсгэх</button>
-        </div>
-      </div>
+    <div style="text-align:center">
+      <div id="qr-code-display" class="qr-code-display"></div>
     </div>
+    <button class="qr-download-btn" onclick="toast('QR код татагдлаа','success')">⬇ QR Код татах</button>
+    <button class="modal-btn modal-cancel" style="width:100%;margin-top:8px" onclick="closeQRModal()">Хаах</button>
+  </div>
+</div>
 
-    <div class="reports-grid">
-      <div class="chart-card">
-        <div class="card-header">
-          <div><div class="card-title">Сарын ирц</div><div class="card-sub">2026 оны 1–3-р сар</div></div>
-        </div>
-        <div style="height:200px;display:flex;flex-direction:column;justify-content:flex-end">
-          <div style="display:flex;align-items:flex-end;gap:6px;height:160px;padding:0 4px">
-            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">
-              <div style="font-size:10px;color:var(--text-3);font-weight:600">88%</div>
-              <div style="flex:1;width:100%;background:var(--gradient);border-radius:5px 5px 0 0;height:88%;transition:height 1.2s ease"></div>
-              <div style="font-size:10px;color:var(--text-3)">1-р сар</div>
-            </div>
-            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">
-              <div style="font-size:10px;color:var(--text-3);font-weight:600">84%</div>
-              <div style="flex:1;width:100%;background:var(--gradient);border-radius:5px 5px 0 0;height:84%;opacity:0.85;transition:height 1.2s 0.1s ease"></div>
-              <div style="font-size:10px;color:var(--text-3)">2-р сар</div>
-            </div>
-            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">
-              <div style="font-size:10px;color:var(--text-3);font-weight:600">83%</div>
-              <div style="flex:1;width:100%;background:var(--gradient);border-radius:5px 5px 0 0;height:83%;opacity:0.7;transition:height 1.2s 0.2s ease"></div>
-              <div style="font-size:10px;color:var(--text-3)">3-р сар</div>
-            </div>
-          </div>
-        </div>
-        <div style="margin-top:16px;display:grid;grid-template-columns:repeat(3,1fr);gap:10px;border-top:1px solid var(--border);padding-top:14px">
-          <div style="text-align:center"><div style="font-size:16px;font-weight:800">85%</div><div style="font-size:11px;color:var(--text-3)">Дундаж хувь</div></div>
-          <div style="text-align:center"><div style="font-size:16px;font-weight:800;color:var(--success)">1,243</div><div style="font-size:11px;color:var(--text-3)">Нийт ирсэн</div></div>
-          <div style="text-align:center"><div style="font-size:16px;font-weight:800;color:var(--error)">187</div><div style="font-size:11px;color:var(--text-3)">Нийт ирээгүй</div></div>
-        </div>
-      </div>
-
-      <div class="chart-card">
-        <div class="card-header">
-          <div><div class="card-title">Тэнхимийн задаргаа</div><div class="card-sub">Тэнхим тус бүрийн ирц</div></div>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:12px">
-          <div style="display:flex;align-items:center;gap:12px">
-            <div style="font-size:12px;font-weight:600;width:100px;color:var(--text-2)">Математик</div>
-            <div style="flex:1;height:8px;background:var(--surface2);border-radius:10px;overflow:hidden"><div style="height:100%;width:94%;background:var(--gradient);border-radius:10px"></div></div>
-            <div style="font-size:12px;font-weight:700;color:var(--primary);width:34px;text-align:right">94%</div>
-          </div>
-          <div style="display:flex;align-items:center;gap:12px">
-            <div style="font-size:12px;font-weight:600;width:100px;color:var(--text-2)">Шинж. ухаан</div>
-            <div style="flex:1;height:8px;background:var(--surface2);border-radius:10px;overflow:hidden"><div style="height:100%;width:88%;background:var(--gradient);border-radius:10px;opacity:0.85"></div></div>
-            <div style="font-size:12px;font-weight:700;color:var(--primary);width:34px;text-align:right">88%</div>
-          </div>
-          <div style="display:flex;align-items:center;gap:12px">
-            <div style="font-size:12px;font-weight:600;width:100px;color:var(--text-2)">Англи хэл</div>
-            <div style="flex:1;height:8px;background:var(--surface2);border-radius:10px;overflow:hidden"><div style="height:100%;width:91%;background:var(--gradient);border-radius:10px;opacity:0.8"></div></div>
-            <div style="font-size:12px;font-weight:700;color:var(--primary);width:34px;text-align:right">91%</div>
-          </div>
-          <div style="display:flex;align-items:center;gap:12px">
-            <div style="font-size:12px;font-weight:600;width:100px;color:var(--text-2)">Түүх</div>
-            <div style="flex:1;height:8px;background:var(--surface2);border-radius:10px;overflow:hidden"><div style="height:100%;width:79%;background:var(--gradient);border-radius:10px;opacity:0.65"></div></div>
-            <div style="font-size:12px;font-weight:700;color:var(--primary);width:34px;text-align:right">79%</div>
-          </div>
-          <div style="display:flex;align-items:center;gap:12px">
-            <div style="font-size:12px;font-weight:600;width:100px;color:var(--text-2)">Биеийн тамир</div>
-            <div style="flex:1;height:8px;background:var(--surface2);border-radius:10px;overflow:hidden"><div style="height:100%;width:86%;background:var(--gradient);border-radius:10px;opacity:0.7"></div></div>
-            <div style="font-size:12px;font-weight:700;color:var(--primary);width:34px;text-align:right">86%</div>
-          </div>
-          <div style="display:flex;align-items:center;gap:12px">
-            <div style="font-size:12px;font-weight:600;width:100px;color:var(--text-2)">Зураг</div>
-            <div style="flex:1;height:8px;background:var(--surface2);border-radius:10px;overflow:hidden"><div style="height:100%;width:96%;background:var(--gradient);border-radius:10px"></div></div>
-            <div style="font-size:12px;font-weight:700;color:var(--primary);width:34px;text-align:right">96%</div>
-          </div>
-        </div>
-      </div>
+<div id="addTeacherModal" class="modal-overlay" onclick="if(event.target===this)closeAddTeacher()">
+  <div class="modal-box" style="max-width:420px">
+    <div class="modal-title">Шинэ багш нэмэх</div>
+    <div class="modal-sub">Firestore руу шууд хадгалагдана</div>
+    <div class="add-form">
+      <div class="form-group"><label>НЭР *</label><input id="at-name" placeholder="Бүтэн нэр"></div>
+      <div class="form-group"><label>ТЭНХИМ *</label><input id="at-dept" placeholder="Математик"></div>
+      <div class="form-group"><label>ӨРӨӨНИЙ ДУГААР</label><input id="at-room" placeholder="А-101"></div>
+      <div class="form-group"><label>ИМЭЙЛ</label><input id="at-email" type="email" placeholder="teacher@iet.mn"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeAddTeacher()">Болих</button>
+      <button class="btn btn-primary" id="at-submit" onclick="submitAddTeacher()">Нэмэх</button>
     </div>
   </div>
+</div>
 
-  <!-- ── SETTINGS ── -->
-  <div class="page" id="page-settings">
-    <div class="page-header">
-      <div>
-        <div class="page-title">Тохиргоо</div>
-        <div class="page-desc">Системийн тохиргоог өөрчлөх</div>
-      </div>
-    </div>
-    <div class="settings-grid">
-      <div class="settings-menu">
-        <div class="settings-menu-item active">
-          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-          Ерөнхий
-        </div>
-        <div class="settings-menu-item">
-          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-          Мэдэгдэл
-        </div>
-        <div class="settings-menu-item">
-          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-          Аюулгүй байдал
-        </div>
-        <div class="settings-menu-item">
-          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
-          Профайл
-        </div>
-      </div>
-      <div class="settings-panel">
-        <div class="settings-section-title">Ерөнхий тохиргоо</div>
-        <div class="settings-section-desc">Програмын тохиргоо болон харагдах байдлыг өөрчилнө.</div>
-
-        <div class="settings-row">
-          <div class="settings-row-info">
-            <div class="settings-row-label">Харанхуй горим</div>
-            <div class="settings-row-desc">Гэрэл ба харанхуй интерфэйс хооронд солих</div>
-          </div>
-          <div class="toggle" id="darkToggle" onclick="toggleThemeFromSettings()"></div>
-        </div>
-        <div class="settings-row">
-          <div class="settings-row-info">
-            <div class="settings-row-label">И-мэйл мэдэгдэл</div>
-            <div class="settings-row-desc">Өдөр тутмын ирцийн хураангуйг и-мэйлээр авах</div>
-          </div>
-          <div class="toggle on" onclick="this.classList.toggle('on');showToast('Мэдэгдлийн тохиргоо шинэчлэгдлээ','success')"></div>
-        </div>
-        <div class="settings-row">
-          <div class="settings-row-info">
-            <div class="settings-row-label">Автоматаар ирээгүй тэмдэглэх</div>
-            <div class="settings-row-desc">9:00 цагийн дараа ирээгүй гэж автоматаар тэмдэглэх</div>
-          </div>
-          <div class="toggle" onclick="this.classList.toggle('on');showToast('Автомат тохиргоо хадгалагдлаа','success')"></div>
-        </div>
-        <div class="settings-row">
-          <div class="settings-row-info">
-            <div class="settings-row-label">Амралтын өдрийн бүртгэл</div>
-            <div class="settings-row-desc">Амралтын өдрүүдэд ирцийн бүртгэл хийх</div>
-          </div>
-          <div class="toggle" onclick="this.classList.toggle('on');showToast('Амралтын өдрийн тохиргоо шинэчлэгдлээ','success')"></div>
-        </div>
-        <div class="settings-row">
-          <div class="settings-row-info">
-            <div class="settings-row-label">Аналитик тайлан</div>
-            <div class="settings-row-desc">Долоо хоног тутмын аналитик тайланг и-мэйлээр илгээх</div>
-          </div>
-          <div class="toggle on" onclick="this.classList.toggle('on');showToast('Тайлангийн тохиргоо шинэчлэгдлээ','success')"></div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-</main>
-
-<div class="toast-container" id="toastContainer"></div>
+<div class="toasts" id="toasts"></div>
 
 <script>
-const teachers = [
-  {id:1, name:'Анна', dept:'Англи хэл', date:'03/18', checkin:'7:58', status:'present', color:'linear-gradient(135deg,#7C3AED,#EC4899)', initials:'А'},
-  {id:2, name:'Мөнх', dept:'Математик', date:'03/18', checkin:'8:02', status:'present', color:'linear-gradient(135deg,#2563EB,#7C3AED)', initials:'М'},
-  {id:3, name:'Сараа', dept:'Хими', date:'03/18', checkin:'8:24', status:'late', color:'linear-gradient(135deg,#F59E0B,#EF4444)', initials:'С'},
-  {id:4, name:'Баяр Эрдэнэ', dept:'Түүх', date:'03/18', checkin:'—', status:'absent', color:'linear-gradient(135deg,#10B981,#2563EB)', initials:'БЭ'},
-  {id:5, name:'Даваа', dept:'Физик', date:'03/18', checkin:'7:55', status:'present', color:'linear-gradient(135deg,#F59E0B,#10B981)', initials:'Д'},
-  {id:6, name:'Бат Эрдэнэ', dept:'Зураг', date:'03/18', checkin:'7:51', status:'present', color:'linear-gradient(135deg,#7C3AED,#EC4899)', initials:'БТ'},
-  {id:7, name:'Мөнх Эрдэнэ', dept:'Хими', date:'03/18', checkin:'8:00', status:'present', color:'linear-gradient(135deg,#06B6D4,#2563EB)', initials:'МЭ'},
-  {id:8, name:'Баяр', dept:'Англи хэл', date:'03/18', checkin:'—', status:'absent', color:'linear-gradient(135deg,#EC4899,#F59E0B)', initials:'Б'},
-  {id:9, name:'Нарансолонго', dept:'Биеийн тамир', date:'03/18', checkin:'8:33', status:'late', color:'linear-gradient(135deg,#10B981,#06B6D4)', initials:'Н'},
-  {id:10, name:'Галаа', dept:'Биологи', date:'03/18', checkin:'7:59', status:'present', color:'linear-gradient(135deg,#2563EB,#10B981)', initials:'Г'},
-];
 
-const statusLabels = {present:'Ирсэн', absent:'Ирээгүй', late:'Хоцорсон'};
-const statusIcons  = {present:'✔', absent:'❌', late:'⏰'};
-const pageNames = {dashboard:'Хяналтын самбар', attendance:'Ирц', teachers:'Багш нар', reports:'Тайлан', settings:'Тохиргоо'};
+const todayStr = new Date().toISOString().split("T")[0];
+const attDate = document.getElementById("att-date");
+if (attDate) attDate.value = todayStr;
+const todaySub = document.getElementById("today-sub");
+if (todaySub) todaySub.textContent = new Date().toLocaleDateString("mn-MN",{year:"numeric",month:"long",day:"numeric"})+" — Өнөөдрийн тойм";
 
-function navigate(page) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.nav-item[data-page]').forEach(n => n.classList.remove('active'));
-  const el = document.getElementById('page-' + page);
-  if (el) el.classList.add('active');
-  document.querySelectorAll('.nav-item[data-page="' + page + '"]').forEach(n => n.classList.add('active'));
-  document.getElementById('topbarTitle').textContent = pageNames[page] || page;
-  closeSidebar();
-  if (page === 'dashboard') initDashboard();
-}
 
-function toggleSidebar() {
-  document.getElementById('sidebar').classList.toggle('open');
-  document.getElementById('mobileOverlay').classList.toggle('show');
-}
-function closeSidebar() {
-  document.getElementById('sidebar').classList.remove('open');
-  document.getElementById('mobileOverlay').classList.remove('show');
-}
+window.markAllPresent = async function() {
+  const ts = window._iet.teachers;
+  for (const t of ts) await window.saveAttendance(t.id,"present","manual");
+  window.navigate("attendance");
+  window.toast(`${ts.length} багш ирсэн гэж тэмдэглэгдлээ`,"success");
+};
 
-function toggleTheme() {
-  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-  document.documentElement.setAttribute('data-theme', isDark ? 'light' : 'dark');
-  const dt = document.getElementById('darkToggle');
-  if (dt) { isDark ? dt.classList.remove('on') : dt.classList.add('on'); }
-  showToast(isDark ? 'Гэрэл горим идэвхжлээ' : 'Харанхуй горим идэвхжлээ', 'info');
-}
-function toggleThemeFromSettings() { toggleTheme(); }
 
-function showToast(msg, type = 'info') {
-  const icons = {success:'✓', error:'✕', info:'ℹ'};
-  const colors = {success:'var(--success)', error:'var(--error)', info:'var(--primary)'};
-  const container = document.getElementById('toastContainer');
-  const toast = document.createElement('div');
-  toast.className = 'toast ' + type;
-  toast.innerHTML = '<div class="toast-icon" style="color:' + colors[type] + '">' + icons[type] + '</div><span>' + msg + '</span>';
-  container.appendChild(toast);
-  setTimeout(() => { toast.classList.add('removing'); setTimeout(() => toast.remove(), 300); }, 3000);
-}
-
-function animateCounters() {
-  document.querySelectorAll('[data-target]').forEach(el => {
-    const target = parseInt(el.dataset.target);
-    const duration = 1200;
-    const step = target / (duration / 16);
-    let current = 0;
-    const timer = setInterval(() => {
-      current = Math.min(current + step, target);
-      el.textContent = Math.floor(current);
-      if (current >= target) clearInterval(timer);
-    }, 16);
-  });
-}
-
-function buildBarChart() {
-  const data = [
-    {day:'Да', p:92, a:8, l:4},
-    {day:'Мя', p:88, a:12, l:6},
-    {day:'Лх', p:95, a:6, l:3},
-    {day:'Пү', p:90, a:10, l:5},
-    {day:'Ба', p:85, a:15, l:7},
-    {day:'Бя', p:40, a:5, l:2},
-    {day:'Ня', p:0, a:0, l:0},
-  ];
-  const max = 110;
-  const container = document.getElementById('barChart');
-  container.innerHTML = '';
-  data.forEach(d => {
-    const g = document.createElement('div');
-    g.className = 'bar-group';
-    g.innerHTML =
-      '<div class="bar-wrap">' +
-        '<div class="bar present" data-val="' + d.p + '" style="height:' + (d.p/max*140) + 'px"></div>' +
-        '<div class="bar absent" data-val="' + d.a + '" style="height:' + (d.a/max*140) + 'px"></div>' +
-        '<div class="bar late" data-val="' + d.l + '" style="height:' + (d.l/max*140) + 'px"></div>' +
-      '</div>' +
-      '<div class="bar-label">' + d.day + '</div>';
-    container.appendChild(g);
-  });
-}
-
-function buildDonut() {
-  const circ = 2 * Math.PI * 38;
-  const pPresent = 0.831, pLate = 0.056, pAbsent = 0.113;
-  const d1 = document.getElementById('d1');
-  const d2 = document.getElementById('d2');
-  const d3 = document.getElementById('d3');
-  if (!d1) return;
-  const presentLen = circ * pPresent;
-  const lateLen    = circ * pLate;
-  const absentLen  = circ * pAbsent;
-  setTimeout(() => {
-    d1.style.strokeDasharray = presentLen + ' ' + (circ - presentLen);
-    d1.style.strokeDashoffset = 0;
-    d2.style.strokeDasharray = lateLen + ' ' + (circ - lateLen);
-    d2.style.strokeDashoffset = -presentLen;
-    d3.style.strokeDasharray = absentLen + ' ' + (circ - absentLen);
-    d3.style.strokeDashoffset = -(presentLen + lateLen);
-  }, 200);
-}
-
-function buildCalendar() {
-  const grid = document.getElementById('calendarGrid');
-  if (!grid) return;
-  const days = ['Ня','Да','Мя','Лх','Пү','Ба','Бя'];
-  grid.innerHTML = '';
-  days.forEach(d => {
-    const h = document.createElement('div');
-    h.className = 'cal-day-header';
-    h.textContent = d;
-    grid.appendChild(h);
-  });
-  // March 2026 starts on Sunday (index 0) — so no offset needed
-  const statuses = ['','','','','present','present','present','present','present','present','absent','present','present','late','present','present','present','present','present','present','present','present','late','present','','','','','','',''];
-  for (let d = 1; d <= 31; d++) {
-    const el = document.createElement('div');
-    const s = statuses[d-1] || '';
-    el.className = 'cal-day' + (d === 18 ? ' today' : (s ? ' ' + s : ''));
-    el.textContent = d;
-    el.onclick = () => showToast(d === 18 ? 'Өнөөдөр' : '3-р сарын ' + d, 'info');
-    grid.appendChild(el);
-  }
-}
-
-function buildTable(data) {
-  const tbody = document.getElementById('tableBody');
-  if (!tbody) return;
-  tbody.innerHTML = '';
-  data.forEach((t, i) => {
-    const label = statusLabels[t.status] || t.status;
-    const icon  = statusIcons[t.status] || '';
-    const tr = document.createElement('tr');
-    tr.innerHTML =
-      '<td style="color:var(--text-3);font-size:12px;font-family:\'JetBrains Mono\',monospace">' + String(i+1).padStart(2,'0') + '</td>' +
-      '<td><div class="teacher-cell">' +
-        '<div class="t-avatar" style="background:' + t.color + '">' + t.initials + '</div>' +
-        '<div><div class="t-name">' + t.name + '</div></div>' +
-      '</div></td>' +
-      '<td><span style="font-size:12.5px;color:var(--text-2)">' + t.dept + '</span></td>' +
-      '<td style="font-size:12.5px;color:var(--text-2);font-family:\'JetBrains Mono\',monospace">' + t.date + '</td>' +
-      '<td style="font-size:12.5px;font-family:\'JetBrains Mono\',monospace;color:var(--text-2)">' + t.checkin + '</td>' +
-      '<td><span class="status-badge status-' + t.status + '"><span class="status-dot"></span>' + icon + ' ' + label + '</span></td>' +
-      '<td><div class="action-btns">' +
-        '<button class="act-btn p" title="Ирсэн" onclick="markStatus(' + t.id + ',\'present\',this)">✔</button>' +
-        '<button class="act-btn a" title="Ирээгүй" onclick="markStatus(' + t.id + ',\'absent\',this)">❌</button>' +
-        '<button class="act-btn l" title="Хоцорсон" onclick="markStatus(' + t.id + ',\'late\',this)">⏰</button>' +
-      '</div></td>';
-    tbody.appendChild(tr);
-  });
-}
-
-function markStatus(id, status, btn) {
-  const toastTypes = {present:'success', absent:'error', late:'info'};
-  const teacher = teachers.find(t => t.id === id);
-  if (teacher) {
-    teacher.status = status;
-    const row = btn.closest('tr');
-    const badge = row.querySelector('.status-badge');
-    badge.className = 'status-badge status-' + status;
-    badge.innerHTML = '<span class="status-dot"></span>' + statusIcons[status] + ' ' + statusLabels[status];
-    showToast(teacher.name + ' — ' + statusLabels[status], toastTypes[status]);
-  }
-}
-
-function filterTable(query) {
-  const q = query.toLowerCase();
-  const filtered = teachers.filter(t => t.name.toLowerCase().includes(q) || t.dept.toLowerCase().includes(q));
-  buildTable(filtered);
-  document.getElementById('tableCount').textContent = filtered.length + ' багш харагдаж байна';
-}
-
-function initDashboard() {
-  setTimeout(() => {
-    animateCounters();
-    buildBarChart();
-    buildDonut();
-  }, 100);
-}
-
-window.addEventListener('load', () => {
-  initDashboard();
-  buildCalendar();
-  buildTable(teachers);
-  setTimeout(() => showToast('Тавтай морилно уу, Admin! 👋', 'success'), 800);
-});
+setInterval(()=>{
+  const qrCount = (window._iet.attendance||[]).filter(a=>a.method==="qr").length;
+  const total = (window._iet.attendance||[]).length;
+  const s1 = document.getElementById("qr-stat-today"); if(s1) s1.textContent = qrCount;
+  const s2 = document.getElementById("qr-stat-total"); if(s2) s2.textContent = total;
+}, 1000);
 </script>
 </body>
 </html>
