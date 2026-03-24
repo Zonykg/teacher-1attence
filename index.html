@@ -498,7 +498,7 @@ function renderMyAttendance() {
       <div class="my-section-title">Миний QR код</div>
       <div class="my-qr-desc">Ирцийн QR скан станц дээр энэ кодыг уншуулна уу</div>
       <div id="my-qr-code" class="my-qr-display"></div>
-      <button class="btn btn-primary" onclick="refreshMyQR('${teacher.id}')">🔄 Шинэчлэх</button>
+      <button class="btn btn-primary" onclick="refreshMyQR('${teacher.id}')"> Шинэчлэх</button>
     </div>
   `;
 
@@ -541,7 +541,7 @@ function renderDashboard() {
   const sub = document.getElementById("kpi-pct-sub");
   if (sub) sub.textContent = `${pct}% ирцийн хувь`;
   const qrEl = document.getElementById("kpi-qr-count");
-  if (qrEl) qrEl.textContent = `📷 ${qrCount} QR скан`;
+  if (qrEl) qrEl.textContent = ` ${qrCount} QR скан`;
 
   const badge = document.getElementById("absent-badge");
   if (badge) badge.textContent = abs;
@@ -1279,13 +1279,6 @@ td{padding:12px 16px;font-size:13.5px;}
       <div class="login-heading">Нэвтрэх</div>
       <div class="login-sub">Ирцийн удирдлагын системд тавтай морилно уу</div>
 
-      <!-- Demo hint -->
-      <div class="demo-hint">
-         <strong>Demo горим</strong><br>
-        <span class="demo-role"> Admin</span> admin@iet.mn · <strong>Admin@2026</strong><br>
-        <span class="demo-role"> Багш</span> anna@iet.mn · <strong>Teacher@2026</strong>
-      </div>
-
       <div id="login-error" class="login-error"></div>
       <form onsubmit="handleLogin(event)">
         <div class="form-group">
@@ -1408,6 +1401,7 @@ td{padding:12px 16px;font-size:13.5px;}
 
   <main class="main">
 
+    <!-- DASHBOARD -->
     <div class="page active" id="page-dashboard">
       <div class="page-header">
         <div>
@@ -1470,7 +1464,7 @@ td{padding:12px 16px;font-size:13.5px;}
       </div>
     </div>
 
-   
+    <!-- ATTENDANCE -->
     <div class="page" id="page-attendance">
       <div class="page-header">
         <div><div class="page-heading">Ирц</div><div class="page-sub">Өдөр тутмын ирцийн бүртгэл</div></div>
@@ -1501,7 +1495,7 @@ td{padding:12px 16px;font-size:13.5px;}
       </div>
     </div>
 
-   
+    <!-- TEACHERS -->
     <div class="page" id="page-teachers">
       <div class="page-header">
         <div><div class="page-heading">Багш нар</div><div class="page-sub">Нийт <span id="teacher-count">—</span> багш</div></div>
@@ -1513,6 +1507,7 @@ td{padding:12px 16px;font-size:13.5px;}
       <div class="teachers-grid" id="teacherCards"></div>
     </div>
 
+    <!-- QR SCAN PAGE -->
     <div class="page" id="page-qr-scan">
       <div class="page-header">
         <div>
@@ -1522,7 +1517,7 @@ td{padding:12px 16px;font-size:13.5px;}
         <button class="btn btn-qr" onclick="startQRScanner()"> Камер дахин эхлүүлэх</button>
       </div>
       <div class="qr-scan-layout">
-     
+        <!-- Camera -->
         <div class="qr-camera-card">
           <div class="qr-camera-title">Камер</div>
           <div class="qr-camera-sub">Багшийн QR кодыг камер руу чиглүүлнэ үү</div>
@@ -1540,8 +1535,10 @@ td{padding:12px 16px;font-size:13.5px;}
           <canvas id="qr-canvas" class="qr-canvas"></canvas>
           <div class="qr-status-bar" id="qr-status">Камер эхлүүлж байна...</div>
 
+          <!-- Feedback -->
           <div id="qr-feedback" class="qr-feedback-card"></div>
 
+          <!-- Manual fallback -->
           <div id="qr-manual-fallback" class="qr-manual-fallback">
             <p>⚠️ Камер ажиллахгүй байна — гараар QR утга оруулах:</p>
             <div class="qr-manual-row">
@@ -1551,8 +1548,9 @@ td{padding:12px 16px;font-size:13.5px;}
           </div>
         </div>
 
-        
+        <!-- Log -->
         <div>
+          <!-- Stats -->
           <div class="qr-log-card" style="margin-bottom:14px">
             <div class="qr-stat-row">
               <div class="qr-stat">
@@ -1565,7 +1563,7 @@ td{padding:12px 16px;font-size:13.5px;}
               </div>
             </div>
           </div>
-        
+          <!-- Log list -->
           <div class="qr-log-card">
             <div class="qr-log-title">QR Бүртгэлийн түүх</div>
             <div class="qr-log-sub">Хамгийн сүүлийн 8 скан</div>
@@ -1577,6 +1575,7 @@ td{padding:12px 16px;font-size:13.5px;}
       </div>
     </div>
 
+    <!-- MY ATTENDANCE (Teacher) -->
     <div class="page" id="page-my-attendance">
       <div class="page-header">
         <div><div class="page-heading">Миний Ирц</div><div class="page-sub">Өнөөдрийн болон долоо хоногийн байдал</div></div>
@@ -1585,6 +1584,7 @@ td{padding:12px 16px;font-size:13.5px;}
       <div id="my-att-content"></div>
     </div>
 
+    <!-- REPORTS -->
     <div class="page" id="page-reports">
       <div class="page-header">
         <div><div class="page-heading">Тайлан</div><div class="page-sub">Ирцийн тайлан ба дүн шинжилгээ</div></div>
@@ -1665,7 +1665,7 @@ td{padding:12px 16px;font-size:13.5px;}
   </main>
 </div>
 
-
+<!-- MARK MODAL -->
 <div id="markModal" class="modal-overlay" onclick="if(event.target===this)closeModal()">
   <div class="modal-box">
     <div class="modal-title">Ирц тэмдэглэх</div>
@@ -1683,7 +1683,7 @@ td{padding:12px 16px;font-size:13.5px;}
   </div>
 </div>
 
-
+<!-- QR MODAL -->
 <div id="qrModal" class="modal-overlay" onclick="if(event.target===this)closeQRModal()">
   <div class="modal-box qr-modal-box">
     <div class="modal-title">📷 QR Код</div>
@@ -1700,6 +1700,7 @@ td{padding:12px 16px;font-size:13.5px;}
   </div>
 </div>
 
+<!-- ADD TEACHER MODAL -->
 <div id="addTeacherModal" class="modal-overlay" onclick="if(event.target===this)closeAddTeacher()">
   <div class="modal-box" style="max-width:420px">
     <div class="modal-title">Шинэ багш нэмэх</div>
@@ -1720,7 +1721,7 @@ td{padding:12px 16px;font-size:13.5px;}
 <div class="toasts" id="toasts"></div>
 
 <script>
-
+// Date init
 const todayStr = new Date().toISOString().split("T")[0];
 const attDate = document.getElementById("att-date");
 if (attDate) attDate.value = todayStr;
