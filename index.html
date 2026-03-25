@@ -391,7 +391,7 @@ function showQRFeedback(teacher, status) {
 
   const configs = {
     present: { icon:"✓", label:"Ирсэн", cls:"qr-fb-success" },
-    late:    { icon:"⏰", label:"Хоцорсон", cls:"qr-fb-late" },
+    late:    { icon:"!", label:"Хоцорсон", cls:"qr-fb-late" },
     already: { icon:"ℹ", label:"Аль хэдийн бүртгэгдсэн", cls:"qr-fb-info" },
   };
   const cfg = configs[status]||configs.present;
@@ -457,7 +457,7 @@ function renderMyAttendance() {
   const checkin = rec?.checkinTime||"—";
   const method = rec?.method||"manual";
   const cls = {present:"my-stat-p",absent:"my-stat-a",late:"my-stat-l"}[status];
-  const lbl = {present:"✓ Ирсэн",absent:"✕ Ирээгүй",late:" Хоцорсон"}[status];
+  const lbl = {present:"✓ Ирсэн",absent:"✕ Ирээгүй",late:"! Хоцорсон"}[status];
 
   const weekStats = [
     {day:"Да",s:"present"},{day:"Мя",s:"present"},{day:"Лх",s:"late"},{day:"Пү",s:"present"},{day:"Ба",s:"present"},
@@ -485,7 +485,7 @@ function renderMyAttendance() {
       <div class="my-week-grid">
         ${weekStats.map(w=>{
           const wc={present:"week-p",late:"week-l",absent:"week-a"}[w.s];
-          const wi={present:"✓",late:"⏰",absent:"✕"}[w.s];
+          const wi={present:"✓",late:"!",absent:"✕"}[w.s];
           return `<div class="week-day"><div class="week-dot ${wc}">${wi}</div><div class="week-label">${w.day}</div></div>`;
         }).join("")}
       </div>
@@ -639,13 +639,13 @@ function renderAttendanceTable(filter="") {
     const method=rec?.method||"manual";
     const today=new Date().toLocaleDateString("mn-MN");
     const cls={present:"sp-p",absent:"sp-a",late:"sp-l"}[status];
-    const lbl={present:"✓ Ирсэн",absent:"✕ Ирээгүй",late:"⏰ Хоцорсон"}[status];
-    const methodBadge=method==="qr"?`<span class="method-qr">📷 QR</span>`:`<span class="method-manual">✋</span>`;
+    const lbl={present:"✓ Ирсэн",absent:"✕ Ирээгүй",late:"! Хоцорсон"}[status];
+    const methodBadge=method==="qr"?`<span class="method-qr"> QR</span>`:`<span class="method-manual">✋</span>`;
     const adminActions = isAdmin() ? `<div class="action-group">
       <button class="act-btn p" title="Ирсэн"    onclick="quickMark('${t.id}','present')">✓</button>
       <button class="act-btn a" title="Ирээгүй"  onclick="quickMark('${t.id}','absent')">✕</button>
-      <button class="act-btn l" title="Хоцорсон" onclick="quickMark('${t.id}','late')">⏰</button>
-      <button class="act-btn q" title="QR код"   onclick="showTeacherQR('${t.id}')">📷</button>
+      <button class="act-btn l" title="Хоцорсон" onclick="quickMark('${t.id}','late')">!</button>
+      <button class="act-btn q" title="QR код"   onclick="showTeacherQR('${t.id}')"></button>
     </div>` : `<span style="font-size:12px;color:var(--ink3)">—</span>`;
     return `<tr>
       <td style="color:var(--ink3);font-size:12px">${String(i+1).padStart(2,"0")}</td>
@@ -666,7 +666,7 @@ function renderAttendanceTable(filter="") {
 window.quickMark = async function(teacherId, status) {
   await saveAttendance(teacherId, status, "manual");
   const cls={present:"sp-p",absent:"sp-a",late:"sp-l"}[status];
-  const lbl={present:"✓ Ирсэн",absent:"✕ Ирээгүй",late:"⏰ Хоцорсон"}[status];
+  const lbl={present:"✓ Ирсэн",absent:"✕ Ирээгүй",late:"! Хоцорсон"}[status];
   const pill=document.getElementById(`pill-${teacherId}`);
   if(pill){ pill.className=`status-pill ${cls}`; pill.innerHTML=`<span class="sp-dot"></span>${lbl}`; }
   const t=window._iet.teachers.find(t=>t.id===teacherId);
@@ -1667,7 +1667,7 @@ td{padding:12px 16px;font-size:13.5px;}
     </div>
     <div class="modal-actions">
       <button class="modal-btn modal-btn-p" onclick="confirmMark('present')">✓ Ирсэн</button>
-      <button class="modal-btn modal-btn-l" onclick="confirmMark('late')">⏰ Хоцорсон</button>
+      <button class="modal-btn modal-btn-l" onclick="confirmMark('late')">! Хоцорсон</button>
       <button class="modal-btn modal-btn-a" onclick="confirmMark('absent')">✕ Ирээгүй</button>
       <button class="modal-btn modal-cancel" onclick="closeModal()">Болих</button>
     </div>
