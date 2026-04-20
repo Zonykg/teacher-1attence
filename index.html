@@ -467,7 +467,7 @@ function renderMyAttendance() {
       <div class="my-info">
         <div class="my-name">${teacher.name}</div>
         <div class="my-dept">${teacher.dept} · ${teacher.room}</div>
-        <div class="my-join"> ${teacher.joinYear} оноос · ⭐ ${teacher.rating}</div>
+        <div class="my-join"> ${teacher.joinYear} оноос ·  ${teacher.rating}</div>
       </div>
     </div>
     <div class="my-today-card">
@@ -686,12 +686,12 @@ function renderTeachersList() {
         <div class="tc-name">${t.name}</div>
         <div class="tc-dept">${t.dept}</div>
         <div class="tc-meta">
-          <span>📍 ${t.room}</span>
-          <span>⭐ ${t.rating||"—"}</span>
-          <span>📅 ${t.joinYear}</span>
+          <span> ${t.room}</span>
+          <span> ${t.rating||"—"}</span>
+          <span> ${t.joinYear}</span>
         </div>
         <div class="tc-actions">
-          <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px" onclick="showTeacherQR('${t.id}')">📷 QR</button>
+          <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px" onclick="showTeacherQR('${t.id}')">⛶ QR</button>
           <button class="btn btn-primary" style="font-size:12px;padding:6px 12px" onclick="openMarkModal('${t.id}')">Тэмдэглэх</button>
         </div>
       </div>
